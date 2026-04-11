@@ -1,45 +1,53 @@
 # FinTrack
 
-Production-minded full-stack Expense Tracker built for the Fenmo technical assessment.
+Production-ready Expense Tracker built for the Fenmo technical assessment.
 
-## What this solves
-- Add expense with `amount`, `category`, `description`, `date`
-- View expense list
-- Filter by category
-- Sort by date (`newest first`)
-- Show total for currently visible list
+## Core features
+- JWT login/register/logout (separate auth pages)
+- Forgot/reset password flow with email link
+- Add expense: `amount`, `category`, `description`, `date`
+- Expense list with **search + multi-filters**:
+  - category
+  - date range
+  - min/max amount
+  - sort (`date_desc`, `date_asc`, `amount_desc`, `amount_asc`)
+- Pagination (`rows/page`, prev/next navigation)
+- Total for currently visible expenses
+- Edit/Delete expense
+- **Export currently visible (filtered) rows to CSV**
+- Overview + Trends pages with line-chart data visibility
 
-## Built for real-world behavior
-- Retry-safe expense creation via `Idempotency-Key` (`POST /api/expenses`)
-- Handles refresh/retry flows safely from UI + API
-- User-scoped data isolation (each user sees only their own expenses)
+## Reliability and correctness
+- Idempotent create (`POST /api/expenses`) using `Idempotency-Key`
+- Safe client retry/refresh handling for submission flows
+- Per-user data isolation in all expense operations
+- Money stored as `NUMERIC(12,2)` (no floating-point drift)
+- Indexed Postgres queries for filter/sort paths
 
-## Security highlights
-- JWT auth in HttpOnly cookie (`SameSite=Lax`, `Secure` in production)
-- Passwords are hashed with `scrypt + salt` (never stored as plain text)
-- Strong password validation (upper/lower/number/symbol, min 8)
-- Forgot-password with token hashing + expiry + one-time use
-- SQL queries use parameterized statements
+## Security
+- JWT in HttpOnly cookie (`SameSite=Lax`, `Secure` in production)
+- Password hashing with `scrypt + salt` (no plain-text storage)
+- Strong password policy (upper/lower/number/symbol, min 8)
+- Password reset token hashing + expiry + one-time use
+- Parameterized SQL queries
 
-## Tech stack
-- Next.js 16 (App Router + Route Handlers)
-- PostgreSQL (Neon/local Postgres)
-- Tailwind CSS
-- Docker + Docker Compose
-
-## Database choice (why PostgreSQL)
-- Reliable relational model for user + expense ownership
-- Strong constraints and indexing for correctness/performance
-- Money stored as `NUMERIC(12,2)` to avoid floating-point errors
-
-## API summary
+## API (summary)
 - `POST /api/expenses` (idempotent create)
 - `GET /api/expenses?category=<name>&sort=date_desc`
 - `PATCH /api/expenses/:id`
 - `DELETE /api/expenses/:id`
 - Auth: register, login, logout, session, forgot/reset password
 
-## Local dev (without Docker)
+## Sample login (review-ready)
+- Email: `test@sample.com`
+- Password: `test@123`
+- Seed: `npm run db:seed-demo`
+
+## Timebox decisions
+- Prioritized correctness, resilience, security, and clean architecture first
+- Delivered practical UX value: filters, trends, pagination, and CSV export
+
+## Local setup
 ```bash
 npm install
 npm run db:migrate
@@ -47,17 +55,7 @@ npm run db:seed-demo
 npm run dev
 ```
 
-## Sample login (for reviewers)
-- Email: `test@sample.com`
-- Password: `test@123`
-- Seed command: `npm run db:seed-demo`
-
-## Timebox trade-offs
-- Focused on correctness, resilience, and security over feature breadth
-- No pagination/export/reporting yet
-- Category kept as text (not normalized table) for speed of delivery
-
-## Docker (recommended for evaluation)
+## Docker (recommended)
 ```bash
 docker compose up -d
 ```

@@ -33,6 +33,13 @@ const readJson = async <T,>(response: Response): Promise<T> => {
   return (await response.json()) as T;
 };
 
+const escapeCsv = (value: string): string => {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+};
+
 export default function ExpenseListPage() {
   const [items, setItems] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +52,8 @@ export default function ExpenseListPage() {
   const [dateTo, setDateTo] = useState("");
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [editExpenseId, setEditExpenseId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editCategory, setEditCategory] = useState("");
@@ -107,6 +116,21 @@ export default function ExpenseListPage() {
     () => filteredItems.reduce((sum, item) => sum + item.amountPaise, 0),
     [filteredItems],
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / rowsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStartIndex = (safePage - 1) * rowsPerPage;
+  const paginatedItems = filteredItems.slice(pageStartIndex, pageStartIndex + rowsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, sort, searchText, dateFrom, dateTo, amountMin, amountMax, rowsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const startEdit = (item: Expense) => {
     setEditExpenseId(item.id);
@@ -174,6 +198,35 @@ export default function ExpenseListPage() {
     } finally {
       setIsActionLoading(false);
     }
+  };
+
+  const exportVisibleAsCsv = () => {
+    if (!filteredItems.length) {
+      setError("No visible expenses to export.");
+      return;
+    }
+
+    const header = ["Date", "Category", "Description", "Amount_INR"];
+    const rows = filteredItems.map((item) => [
+      item.date,
+      item.category,
+      item.description,
+      (item.amountPaise / 100).toFixed(2),
+    ]);
+
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => escapeCsv(String(cell))).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fintrack-expenses-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -330,7 +383,14 @@ export default function ExpenseListPage() {
             </p>
           </div>
 
-          <div className="flex items-end">
+          <div className="grid items-end gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={exportVisibleAsCsv}
+              className="btn-secondary w-full text-sm"
+            >
+              Export CSV
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -341,10 +401,52 @@ export default function ExpenseListPage() {
                 setAmountMin("");
                 setAmountMax("");
                 setSort("date_desc");
+                setRowsPerPage(10);
+                setCurrentPage(1);
               }}
               className="btn-secondary w-full text-sm"
             >
               Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+          <p className="text-sm muted">
+            Showing {filteredItems.length ? pageStartIndex + 1 : 0}-
+            {Math.min(pageStartIndex + rowsPerPage, filteredItems.length)} of {filteredItems.length}
+          </p>
+          <div className="flex items-end gap-2">
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              Rows / page
+              <select
+                value={rowsPerPage}
+                onChange={(event) => setRowsPerPage(Number.parseInt(event.target.value, 10))}
+                className="input-control"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={safePage === 1}
+              className="btn-secondary h-[42px] px-4 text-sm disabled:opacity-60"
+            >
+              Prev
+            </button>
+            <div className="panel-muted grid h-[42px] min-w-[110px] place-items-center px-3 text-sm">
+              Page {safePage} / {totalPages}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={safePage === totalPages}
+              className="btn-secondary h-[42px] px-4 text-sm disabled:opacity-60"
+            >
+              Next
             </button>
           </div>
         </div>
@@ -379,7 +481,7 @@ export default function ExpenseListPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredItems.map((item) => (
+                  paginatedItems.map((item) => (
                     <tr key={item.id} className="border-t border-[var(--border)]">
                       <td className="px-3 py-3">{formatDate(item.date)}</td>
                       <td className="px-3 py-3">{item.category}</td>
