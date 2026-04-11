@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { getSessionUser } from "@/lib/auth";
 import { getPool } from "@/lib/db";
 import {
   buildRequestHash,
@@ -19,6 +20,11 @@ const getIdempotencyKey = (request: Request): string => {
 
 export async function POST(request: Request) {
   try {
+    const user = await getSessionUser(request);
+    if (!user) {
+      return Response.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     const payload = await request.json();
     const input = parseNewExpense(payload);
     const idempotencyKey = getIdempotencyKey(request);
@@ -37,10 +43,10 @@ export async function POST(request: Request) {
         `
           SELECT idempotency_key, request_hash, expense_id
           FROM expense_idempotency
-          WHERE idempotency_key = $1
+          WHERE user_id = $1 AND idempotency_key = $2
           FOR UPDATE
         `,
-        [idempotencyKey],
+        [user.id, idempotencyKey],
       );
 
       if (existing.rowCount && existing.rows[0].request_hash !== requestHash) {
@@ -56,30 +62,33 @@ export async function POST(request: Request) {
           `
             SELECT id, amount::text AS amount, category, description, expense_date::text AS date, created_at::text
             FROM expenses
-            WHERE id = $1
+            WHERE id = $1 AND user_id = $2
           `,
-          [existing.rows[0].expense_id],
+          [existing.rows[0].expense_id, user.id],
         );
 
         await client.query("COMMIT");
+        if (!priorExpense.rowCount) {
+          return Response.json({ error: "Unable to resolve prior request." }, { status: 409 });
+        }
         return Response.json({ expense: normalizeExpense(priorExpense.rows[0]) }, { status: 200 });
       }
 
       const inserted = await client.query(
         `
-          INSERT INTO expenses (id, amount, category, description, expense_date)
-          VALUES ($1, $2, $3, $4, $5)
+          INSERT INTO expenses (id, user_id, amount, category, description, expense_date)
+          VALUES ($1, $2, $3, $4, $5, $6)
           RETURNING id, amount::text AS amount, category, description, expense_date::text AS date, created_at::text
         `,
-        [randomUUID(), input.amount, input.category, input.description, input.date],
+        [randomUUID(), user.id, input.amount, input.category, input.description, input.date],
       );
 
       await client.query(
         `
-          INSERT INTO expense_idempotency (idempotency_key, request_hash, expense_id)
-          VALUES ($1, $2, $3)
+          INSERT INTO expense_idempotency (user_id, idempotency_key, request_hash, expense_id)
+          VALUES ($1, $2, $3, $4)
         `,
-        [idempotencyKey, requestHash, inserted.rows[0].id],
+        [user.id, idempotencyKey, requestHash, inserted.rows[0].id],
       );
 
       await client.query("COMMIT");
@@ -101,20 +110,28 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const user = await getSessionUser(request);
+    if (!user) {
+      return Response.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
     const pool = getPool();
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category")?.trim();
     const sort = searchParams.get("sort");
 
     const clauses: string[] = [];
-    const values: string[] = [];
+    const values: (string | number)[] = [];
+
+    values.push(user.id);
+    clauses.push(`user_id = $${values.length}`);
 
     if (category) {
       values.push(category);
       clauses.push(`category = $${values.length}`);
     }
 
-    const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+    const where = `WHERE ${clauses.join(" AND ")}`;
     const orderBy = sort === "date_desc" || !sort ? "ORDER BY expense_date DESC, created_at DESC" : "";
 
     const query = `
