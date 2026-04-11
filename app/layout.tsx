@@ -13,8 +13,13 @@ const codeMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
+  title: "FinTrack",
   description: "Track personal expenses with resilient request handling.",
+  icons: {
+    icon: "/Logo.png",
+    shortcut: "/Logo.png",
+    apple: "/Logo.png",
+  },
 };
 
 export default function RootLayout({

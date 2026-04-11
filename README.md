@@ -65,10 +65,31 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
 ```bash
 npm install
 npm run db:migrate
+npm run db:seed-demo
 npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+## Run with Docker (Local Dev)
+
+Start app + local Postgres:
+
+```bash
+docker compose up --build
+```
+
+This will:
+
+- start PostgreSQL on `localhost:5432`
+- start Next.js app on `http://localhost:3000`
+- run DB migration automatically on app startup
+
+Optional demo seed after containers are up:
+
+```bash
+docker compose exec app npm run db:seed-demo
+```
 
 ## Schema Creation (How to create schema now)
 
@@ -178,3 +199,19 @@ SMTP_SECURE=false
 ```
 
 If SMTP is not configured, reset links are logged in server console in local/dev.
+
+## Demo Seed Script
+
+To quickly generate a review-ready demo account and two months of expenses:
+
+```bash
+npm run db:seed-demo
+```
+
+This creates/updates:
+
+- Email: `test@sample.com`
+- Password: `test@123`
+- Expenses: generated every ~3 days for the last ~60 days
+
+Note: password is stored hashed (`scrypt + salt`), never as plain text.

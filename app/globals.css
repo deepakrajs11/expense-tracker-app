@@ -46,13 +46,53 @@ body {
 
 .app-shell {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.03) 0%, rgba(15, 23, 42, 0) 250px), var(--bg);
+  background: var(--bg);
+  padding: 12px;
+}
+
+.navbar-shell {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-canvas {
+  width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.workspace-frame {
+  background: var(--surface);
+}
+
+.workspace-body {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .workspace-body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+.workspace-sidebar {
+  background: color-mix(in srgb, var(--surface-muted) 62%, var(--surface) 38%);
+  border-right: 1px solid var(--border);
+}
+
+.workspace-content {
+  background: var(--surface);
 }
 
 .panel {
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 97%, var(--surface-muted) 3%);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .panel-muted {
@@ -148,4 +188,14 @@ body {
 
 .theme-switch.is-dark .theme-knob {
   transform: translateX(38px);
+}
+
+.auth-frame {
+  min-height: 860px;
+}
+
+@media (max-width: 1023px) {
+  .auth-frame {
+    min-height: auto;
+  }
 }

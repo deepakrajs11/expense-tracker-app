@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fintrack-db
+    environment:
+      POSTGRES_DB: fintrack
+      POSTGRES_USER: fintrack
+      POSTGRES_PASSWORD: fintrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintrack -d fintrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fintrack-app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_NAME: fintrack
+      DB_USER: fintrack
+      DB_PASSWORD: fintrack
+      DB_PORT: 5432
+      DB_SSL: "false"
+      JWT_SECRET: local-docker-jwt-secret-change-me
+      WEB_BASE_URL: http://localhost:3000
+      SMTP_SECURE: "false"
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run db:migrate && npm run dev -- -H 0.0.0.0 -p 3000"
+
+volumes:
+  postgres_data:
+

@@ -7,6 +7,8 @@ type AppNavbarProps = {
   onToggleTheme: () => void;
   isAuthenticated: boolean;
   onLogout?: () => void;
+  onLogoClick?: () => void;
+  brandHref?: string;
 };
 
 export default function AppNavbar({
@@ -14,19 +16,35 @@ export default function AppNavbar({
   onToggleTheme,
   isAuthenticated,
   onLogout,
+  onLogoClick,
+  brandHref,
 }: AppNavbarProps) {
+  const brandTarget = brandHref ?? (isAuthenticated ? "/dashboard" : "/login");
+
   return (
-    <header className="panel sticky top-0 z-40 mb-4 px-4 py-3 sm:px-5">
-      <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between">
-        <Link href={isAuthenticated ? "/dashboard" : "/login"} className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--primary)] text-sm font-bold text-white">
-            ₹
-          </div>
-          <div>
-            <p className="text-sm font-semibold leading-tight">FinTrack</p>
-            <p className="text-xs muted leading-tight">Personal Finance Tracker</p>
-          </div>
-        </Link>
+    <header className="navbar-shell px-4 py-3 sm:px-5">
+      <div className="flex w-full items-center justify-between">
+        {onLogoClick ? (
+          <button type="button" onClick={onLogoClick} className="flex items-center gap-3" aria-label="Toggle sidebar">
+            <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--primary)] text-xs font-bold text-white">
+              Rs
+            </div>
+            <div>
+              <p className="text-sm font-semibold leading-tight">FinTrack</p>
+              <p className="text-xs muted leading-tight">Personal Finance Tracker</p>
+            </div>
+          </button>
+        ) : (
+          <Link href={brandTarget} className="flex items-center gap-3">
+            <div className="grid h-8 w-8 place-items-center rounded-md bg-[var(--primary)] text-xs font-bold text-white">
+              Rs
+            </div>
+            <div>
+              <p className="text-sm font-semibold leading-tight">FinTrack</p>
+              <p className="text-xs muted leading-tight">Personal Finance Tracker</p>
+            </div>
+          </Link>
+        )}
 
         <div className="flex items-center gap-3">
           <button
@@ -64,4 +82,3 @@ export default function AppNavbar({
     </header>
   );
 }
-
