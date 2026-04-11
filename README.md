@@ -1,67 +1,45 @@
-# Expense Tracker (Next.js + PostgreSQL)
+# FinTrack
 
-Minimal full-stack expense tracker with resilient request handling.
+Production-minded full-stack Expense Tracker built for the Fenmo technical assessment.
 
-## Features
-
-- Register / login / logout with JWT in HttpOnly cookie
-- Forgot password flow via email reset link (`/forget-password?token=...`)
-- Create expense entries with `amount`, `category`, `description`, and `date`
-- List only the logged-in user expenses
+## What this solves
+- Add expense with `amount`, `category`, `description`, `date`
+- View expense list
 - Filter by category
-- Sort by newest date first
-- Show total of currently visible list
-- Idempotent create API using `Idempotency-Key` for retry safety
-- Light and dark theme with persisted preference
+- Sort by date (`newest first`)
+- Show total for currently visible list
 
-## Tech Decisions
+## Built for real-world behavior
+- Retry-safe expense creation via `Idempotency-Key` (`POST /api/expenses`)
+- Handles refresh/retry flows safely from UI + API
+- User-scoped data isolation (each user sees only their own expenses)
 
-- **Framework**: Next.js App Router (`app/`) with Route Handlers for API
-- **Database**: PostgreSQL (Neon)
-- **Money handling**: Store amount as exact decimal (`amount NUMERIC(12,2)`) to avoid floating-point errors
-- **Auth**: Password hashing via Node `crypto.scrypt`, JWT (`HS256`) in secure HttpOnly cookie
-- **Idempotency**: `(user_id, idempotency_key)` + request hash to prevent duplicates per user on retries
+## Security highlights
+- JWT auth in HttpOnly cookie (`SameSite=Lax`, `Secure` in production)
+- Passwords are hashed with `scrypt + salt` (never stored as plain text)
+- Strong password validation (upper/lower/number/symbol, min 8)
+- Forgot-password with token hashing + expiry + one-time use
+- SQL queries use parameterized statements
 
-## Trade-offs (timebox)
+## Tech stack
+- Next.js 16 (App Router + Route Handlers)
+- PostgreSQL (Neon/local Postgres)
+- Tailwind CSS
+- Docker + Docker Compose
 
-- Kept category as free text (not normalized table)
-- Used custom auth/session routes instead of full auth framework to keep scope controlled
+## Database choice (why PostgreSQL)
+- Reliable relational model for user + expense ownership
+- Strong constraints and indexing for correctness/performance
+- Money stored as `NUMERIC(12,2)` to avoid floating-point errors
 
-## Intentionally Not Done
+## API summary
+- `POST /api/expenses` (idempotent create)
+- `GET /api/expenses?category=<name>&sort=date_desc`
+- `PATCH /api/expenses/:id`
+- `DELETE /api/expenses/:id`
+- Auth: register, login, logout, session, forgot/reset password
 
-- No pagination
-- No edit/delete expense
-- No password reset flow / email verification
-
-## Prerequisites
-
-- Node.js 20+
-- PostgreSQL (Neon works)
-
-## Environment
-
-Create `.env`:
-
-```env
-DB_HOST=ep-proud-hat-anaoamec.c-6.us-east-1.aws.neon.tech
-DB_POOLER_HOST=ep-proud-hat-anaoamec-pooler.c-6.us-east-1.aws.neon.tech
-DB_NAME=neondb
-DB_USER=neondb_owner
-DB_PASSWORD=your_password
-DB_PORT=5432
-DB_SSL=true
-JWT_SECRET=your_long_random_secret
-WEB_BASE_URL=http://localhost:3000
-```
-
-You can also use:
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
-```
-
-## Install & Run
-
+## Local dev (without Docker)
 ```bash
 npm install
 npm run db:migrate
@@ -69,149 +47,17 @@ npm run db:seed-demo
 npm run dev
 ```
 
-Open `http://localhost:3000`.
-
-## Run with Docker (Local Dev)
-
-Start app + local Postgres:
-
-```bash
-docker compose up --build
-```
-
-This will:
-
-- start PostgreSQL on `localhost:5432`
-- start Next.js app on `http://localhost:3000`
-- run DB migration automatically on app startup
-
-Optional demo seed after containers are up:
-
-```bash
-docker compose exec app npm run db:seed-demo
-```
-
-## Schema Creation (How to create schema now)
-
-The schema is created by:
-
-```bash
-npm run db:migrate
-```
-
-This creates:
-
-- `users`
-- `expenses`
-- `expense_idempotency`
-- `password_reset_tokens`
-- indexes for user-scoped filtering/sorting
-
-## API
-
-### `POST /api/auth/register`
-
-Create account and start authenticated JWT session.
-
-Body:
-
-```json
-{
-  "name": "Deepak Raj",
-  "email": "you@example.com",
-  "password": "strongPassword123"
-}
-```
-
-### `POST /api/auth/login`
-
-Login and start authenticated JWT session.
-
-### `POST /api/auth/logout`
-
-Logout and clear session cookie.
-
-### `GET /api/auth/session`
-
-Validates JWT cookie and returns current logged-in user or `null`.
-
-### `POST /api/auth/forgot-password`
-
-Accepts `{ email }`, verifies registered user, creates reset token, and sends mail with:
-
-`<WEB_BASE_URL>/forget-password?token=<raw-token>`
-
-### `GET /api/auth/reset-password?token=...`
-
-Validates whether reset token is active.
-
-### `POST /api/auth/reset-password`
-
-Accepts `{ token, password }`, validates token, and sets new password (strong password policy enforced).
-
-### `POST /api/expenses`
-
-Creates a new expense for logged-in user.
-
-Body:
-
-```json
-{
-  "amount": "249.99",
-  "category": "Groceries",
-  "description": "Weekly vegetables",
-  "date": "2026-04-11"
-}
-```
-
-Headers:
-
-- `Idempotency-Key: <unique-key>` (recommended for retry safety)
-
-Behavior:
-
-- Same key + same payload => returns same created expense
-- Same key + different payload => `409 Conflict`
-
-### `GET /api/expenses`
-
-Returns only logged-in user expenses.
-
-Query params:
-
-- `category=<name>`
-- `sort=date_desc`
-
-## Deployment Notes
-
-- Deploy app on Vercel (or Render)
-- Add DB env vars in deployment settings
-- Run `npm run db:migrate` once against production DB before first use
-Optional SMTP for real email delivery:
-
-```env
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=your_user
-SMTP_PASS=your_password
-SMTP_FROM=no-reply@your-domain.com
-SMTP_SECURE=false
-```
-
-If SMTP is not configured, reset links are logged in server console in local/dev.
-
-## Demo Seed Script
-
-To quickly generate a review-ready demo account and two months of expenses:
-
-```bash
-npm run db:seed-demo
-```
-
-This creates/updates:
-
+## Sample login (for reviewers)
 - Email: `test@sample.com`
 - Password: `test@123`
-- Expenses: generated every ~3 days for the last ~60 days
+- Seed command: `npm run db:seed-demo`
 
-Note: password is stored hashed (`scrypt + salt`), never as plain text.
+## Timebox trade-offs
+- Focused on correctness, resilience, and security over feature breadth
+- No pagination/export/reporting yet
+- Category kept as text (not normalized table) for speed of delivery
+
+## Docker (recommended for evaluation)
+```bash
+docker compose up -d
+```
