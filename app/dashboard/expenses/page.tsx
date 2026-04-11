@@ -470,7 +470,7 @@ export default function ExpenseListPage() {
                   [...Array.from({ length: 6 })].map((_, index) => (
                     <tr key={`loading-${index}`} className="border-t border-[var(--border)]">
                       <td colSpan={5} className="px-3 py-3">
-                        <div className="h-3 animate-pulse rounded bg-[var(--surface-muted)]" />
+                        <div className="skeleton h-3 w-full" />
                       </td>
                     </tr>
                   ))

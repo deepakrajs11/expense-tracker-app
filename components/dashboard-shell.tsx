@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import AppNavbar from "@/components/app-navbar";
+import LoadingPanel from "@/components/loading-panel";
 import { useTheme } from "@/lib/useTheme";
 
 type SessionUser = {
@@ -94,7 +95,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   if (isChecking || !session || !contextValue) {
     return (
       <main className="app-shell grid min-h-screen place-items-center px-4">
-        <div className="panel px-6 py-4 text-sm">Loading workspace...</div>
+        <LoadingPanel
+          title="Loading workspace"
+          subtitle="Checking session and preparing your dashboard..."
+        />
       </main>
     );
   }

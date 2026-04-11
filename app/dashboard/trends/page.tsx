@@ -273,7 +273,10 @@ export default function TrendsPage() {
 
         <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3">
           {isLoading ? (
-            <div className="grid h-[290px] place-items-center text-sm muted">Building chart...</div>
+            <div className="grid h-[290px] gap-3 p-2">
+              <div className="skeleton h-4 w-40" />
+              <div className="skeleton h-full w-full" />
+            </div>
           ) : series.points.length < 2 ? (
             <div className="grid h-[290px] place-items-center text-sm muted">
               Not enough points for trend visualization.

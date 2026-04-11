@@ -151,15 +151,27 @@ export default function DashboardOverviewPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="panel p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Total Spend</p>
-          <p className="mt-2 text-xl font-semibold">{isLoading ? "..." : formatInr(total)}</p>
+          {isLoading ? (
+            <div className="skeleton mt-2 h-7 w-28" />
+          ) : (
+            <p className="mt-2 text-xl font-semibold">{formatInr(total)}</p>
+          )}
         </div>
         <div className="panel p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Expenses</p>
-          <p className="mt-2 text-xl font-semibold">{isLoading ? "..." : items.length}</p>
+          {isLoading ? (
+            <div className="skeleton mt-2 h-7 w-16" />
+          ) : (
+            <p className="mt-2 text-xl font-semibold">{items.length}</p>
+          )}
         </div>
         <div className="panel p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Categories</p>
-          <p className="mt-2 text-xl font-semibold">{isLoading ? "..." : categories}</p>
+          {isLoading ? (
+            <div className="skeleton mt-2 h-7 w-16" />
+          ) : (
+            <p className="mt-2 text-xl font-semibold">{categories}</p>
+          )}
         </div>
       </div>
 
@@ -176,7 +188,10 @@ export default function DashboardOverviewPage() {
 
           <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3">
             {isLoading ? (
-              <div className="grid h-[210px] place-items-center text-sm muted">Building chart...</div>
+              <div className="grid h-[210px] gap-3 p-2">
+                <div className="skeleton h-4 w-40" />
+                <div className="skeleton h-full w-full" />
+              </div>
             ) : trend.points.length < 2 ? (
               <div className="grid h-[210px] place-items-center text-sm muted">
                 Add more expenses to view spending trend.
@@ -270,11 +285,13 @@ export default function DashboardOverviewPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr className="border-t border-[var(--border)]">
-                    <td colSpan={4} className="px-3 py-6 muted">
-                      Loading...
-                    </td>
-                  </tr>
+                  [...Array.from({ length: 4 })].map((_, index) => (
+                    <tr key={`overview-loading-${index}`} className="border-t border-[var(--border)]">
+                      <td colSpan={4} className="px-3 py-3">
+                        <div className="skeleton h-4 w-full" />
+                      </td>
+                    </tr>
+                  ))
                 ) : recent.length === 0 ? (
                   <tr className="border-t border-[var(--border)]">
                     <td colSpan={4} className="px-3 py-6 muted">

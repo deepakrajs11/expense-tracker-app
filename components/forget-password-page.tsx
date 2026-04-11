@@ -137,7 +137,11 @@ export default function ForgetPasswordPage({ token }: ForgetPasswordPageProps) {
                 This reset link is invalid or expired. Please request a new one.
               </div>
             ) : isTokenValid === null ? (
-              <div className="mt-5 text-sm muted">Validating token...</div>
+              <div className="mt-5 grid gap-2">
+                <div className="skeleton h-3 w-48" />
+                <div className="skeleton h-10 w-full" />
+                <div className="skeleton h-10 w-full" />
+              </div>
             ) : (
               <form className="mt-5 grid gap-4" onSubmit={handleSetPassword}>
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
