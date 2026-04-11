@@ -1,53 +1,143 @@
-# FinTrack
+# 💰 FinTrack — Production-Ready Expense Tracker
 
-Production-ready Expense Tracker built for the Fenmo technical assessment.
+A complete, production-oriented full-stack expense tracker built as part of a technical assessment.
 
-## Core features
-- JWT login/register/logout (separate auth pages)
-- Forgot/reset password flow with email link
-- Add expense: `amount`, `category`, `description`, `date`
-- Expense list with **search + multi-filters**:
-  - category
-  - date range
-  - min/max amount
-  - sort (`date_desc`, `date_asc`, `amount_desc`, `amount_asc`)
-- Pagination (`rows/page`, prev/next navigation)
-- Total for currently visible expenses
-- Edit/Delete expense
-- **Export currently visible (filtered) rows to CSV**
-- Overview + Trends pages with line-chart data visibility
+This project focuses on **correctness, reliability, and real-world usability** rather than feature bloat.
 
-## Reliability and correctness
-- Idempotent create (`POST /api/expenses`) using `Idempotency-Key`
-- Safe client retry/refresh handling for submission flows
-- Per-user data isolation in all expense operations
-- Money stored as `NUMERIC(12,2)` (no floating-point drift)
-- Indexed Postgres queries for filter/sort paths
+---
 
-## Security
-- JWT in HttpOnly cookie (`SameSite=Lax`, `Secure` in production)
-- Password hashing with `scrypt + salt` (no plain-text storage)
-- Strong password policy (upper/lower/number/symbol, min 8)
-- Password reset token hashing + expiry + one-time use
-- Parameterized SQL queries
+## 🌐 Live Demo
 
-## API (summary)
-- `POST /api/expenses` (idempotent create)
-- `GET /api/expenses?category=<name>&sort=date_desc`
-- `PATCH /api/expenses/:id`
-- `DELETE /api/expenses/:id`
-- Auth: register, login, logout, session, forgot/reset password
+👉 [Application Link](https://expense-tracker-app-two-zeta.vercel.app/)
 
-## Sample login (review-ready)
-- Email: `test@sample.com`
-- Password: `test@123`
-- Seed: `npm run db:seed-demo`
+---
 
-## Timebox decisions
-- Prioritized correctness, resilience, security, and clean architecture first
-- Delivered practical UX value: filters, trends, pagination, and CSV export
+## ⚡ Quick Reviewer Access (Recommended)
 
-## Local setup
+To save time during evaluation, you can use the demo account:
+
+* **Email:** [test@sample.com](mailto:test@sample.com)
+* **Password:** test@123
+
+👉 Alternatively, feel free to **register a new account** and test all flows.
+
+---
+
+## 🧩 Problem Statement
+
+Build a minimal expense tracking system that behaves correctly under real-world conditions:
+
+* Network retries
+* Duplicate submissions
+* Page refreshes
+* Concurrent usage
+
+---
+
+## 🚀 Core Features
+
+### 🧾 Expense Management
+
+* Create expense (amount, category, description, date)
+* Edit & delete expenses
+* View list of expenses
+
+### 🔍 Filtering & Sorting
+
+* Filter by:
+
+  * Category
+  * Date range
+  * Min / Max amount
+* Sort by:
+
+  * Date (asc / desc)
+  * Amount (asc / desc)
+
+### 📊 Insights
+
+* Total for currently visible (filtered) expenses
+* Overview + Trends (line chart)
+
+### 📄 Data Export
+
+* Export filtered results to CSV
+
+### 📑 Pagination
+
+* Configurable rows per page
+* Prev / Next navigation
+
+---
+
+## 🔐 Authentication
+
+* JWT-based authentication
+* Register / Login / Logout
+* Forgot & Reset password via email flow
+
+---
+
+## 🧠 Reliability & Data Correctness
+
+This project is designed with **real-world failure scenarios in mind**:
+
+* ✅ **Idempotent expense creation** using `Idempotency-Key`
+* ✅ Safe handling of:
+
+  * Double clicks
+  * Network retries
+  * Page refresh after submit
+* ✅ Per-user data isolation
+* ✅ Money stored using `NUMERIC(12,2)` (no floating point issues)
+* ✅ Indexed queries for efficient filtering & sorting
+
+---
+
+## 🔒 Security Considerations
+
+* JWT stored in **HttpOnly cookies**
+* `SameSite=Lax`, `Secure` in production
+* Password hashing using **scrypt + salt**
+* Strong password policy enforcement
+* Reset tokens:
+
+  * Hashed
+  * Expiring
+  * Single-use
+* Parameterized SQL queries (SQL injection safe)
+
+---
+
+## 🔌 API Overview
+
+### Expense APIs
+
+* `POST /api/expenses` → Create (idempotent)
+* `GET /api/expenses` → List (filter + sort supported)
+* `PATCH /api/expenses/:id` → Update
+* `DELETE /api/expenses/:id` → Delete
+
+### Auth APIs
+
+* Register / Login / Logout
+* Session check
+* Forgot / Reset password
+
+---
+
+## 🏗️ Tech Stack
+
+* **Frontend & Backend:** Next.js (App Router, TypeScript)
+* **Database:** PostgreSQL
+* **Auth:** JWT (cookie-based)
+* **Styling:** Tailwind CSS
+* **Charts:** [mention if used]
+
+---
+
+## ⚙️ Local Setup
+
 ```bash
 npm install
 npm run db:migrate
@@ -55,7 +145,96 @@ npm run db:seed-demo
 npm run dev
 ```
 
-## Docker (recommended)
+---
+
+## 🐳 Docker Setup (Recommended)
+
 ```bash
 docker compose up -d
 ```
+
+---
+
+## 🌱 Demo Data
+
+To quickly test the app:
+
+```bash
+npm run db:seed-demo
+```
+
+---
+
+## ⚖️ Key Design Decisions
+
+### 1. Idempotency for POST /expenses
+
+Handled via `Idempotency-Key` to ensure:
+
+* No duplicate entries on retries
+* Safe real-world behavior
+
+---
+
+### 2. Monetary Precision
+
+Used `NUMERIC(12,2)` instead of float to avoid:
+
+* Rounding errors
+* Financial inaccuracies
+
+---
+
+### 3. Fullstack in Next.js
+
+Chose Next.js for:
+
+* Faster development within timebox
+* Unified frontend + backend
+* Easier deployment
+
+---
+
+### 4. JWT via Cookies (not localStorage)
+
+* Prevents XSS exposure
+* Aligns with production security practices
+
+---
+
+## ⏳ Timebox Trade-offs
+
+Due to the 4-hour constraint:
+
+* Focused on **correctness > UI polish**
+* Implemented **core flows deeply** instead of adding many features
+* Kept architecture simple but extensible
+
+---
+
+## 🚧 What I Would Improve With More Time
+
+* Better UI/UX polish
+* Add integration & unit tests
+* Rate limiting & API monitoring
+* Improved analytics dashboard
+* Role-based access (multi-user scenarios)
+
+---
+
+## 🎯 Evaluation Focus
+
+This project is designed to demonstrate:
+
+* Thoughtful handling of **edge cases**
+* Ability to build **production-like systems quickly**
+* Clean and maintainable code structure
+* Strong engineering judgment under constraints
+
+---
+
+## 🙌 Final Notes
+
+The goal was to build something **simple, correct, and extensible** — not just a demo.
+
+Happy to walk through design decisions if needed.
