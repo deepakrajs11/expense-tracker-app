@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Expense Tracker (Next.js + PostgreSQL)
 
-## Getting Started
+Minimal full-stack expense tracker with resilient request handling.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Create expense entries with `amount`, `category`, `description`, and `date`
+- List expenses
+- Filter by category
+- Sort by newest date first
+- Show total of currently visible list
+- Idempotent create API using `Idempotency-Key` for retry safety
+
+## Tech Decisions
+
+- **Framework**: Next.js App Router (`app/`) with Route Handlers for API
+- **Database**: PostgreSQL (Neon)
+- **Money handling**: Store amount as exact decimal (`amount NUMERIC(12,2)`) to avoid floating-point errors
+- **Idempotency**: `expense_idempotency` table maps key + request hash to created expense so duplicate retries do not create duplicate rows
+
+## Trade-offs (timebox)
+
+- Kept auth out of scope
+- Kept category as free text (not normalized table)
+- Focused on correctness and retry behavior over advanced UI polish
+
+## Intentionally Not Done
+
+- No pagination
+- No edit/delete expense
+- No category summary charts
+
+## Prerequisites
+
+- Node.js 20+
+- PostgreSQL (Neon works)
+
+## Environment
+
+Create `.env`:
+
+```env
+DB_HOST=ep-proud-hat-anaoamec.c-6.us-east-1.aws.neon.tech
+DB_POOLER_HOST=ep-proud-hat-anaoamec-pooler.c-6.us-east-1.aws.neon.tech
+DB_NAME=neondb
+DB_USER=neondb_owner
+DB_PASSWORD=your_password
+DB_PORT=5432
+DB_SSL=true
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+You can also use:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL=postgresql://user:password@host:5432/dbname?sslmode=require
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Install & Run
 
-## Learn More
+```bash
+npm install
+npm run db:migrate
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Schema Creation (How to create schema now)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The schema is created by:
 
-## Deploy on Vercel
+```bash
+npm run db:migrate
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This creates:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `expenses`
+- `expense_idempotency`
+- indexes on `expense_date` and `category`
+
+## API
+
+### `POST /api/expenses`
+
+Creates a new expense.
+
+Body:
+
+```json
+{
+  "amount": "249.99",
+  "category": "Groceries",
+  "description": "Weekly vegetables",
+  "date": "2026-04-11"
+}
+```
+
+Headers:
+
+- `Idempotency-Key: <unique-key>` (recommended for retry safety)
+
+Behavior:
+
+- Same key + same payload => returns same created expense
+- Same key + different payload => `409 Conflict`
+
+### `GET /api/expenses`
+
+Query params:
+
+- `category=<name>`
+- `sort=date_desc`
+
+## Deployment Notes
+
+- Deploy app on Vercel (or Render)
+- Add DB env vars in deployment settings
+- Run `npm run db:migrate` once against production DB before first use
