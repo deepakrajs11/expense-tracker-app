@@ -65,7 +65,7 @@ export default function IncomeListPage() {
     fetchIncomes();
   }, [fetchIncomes]);
 
-  const { categories: places } = useCategoryOptions(items.map((item) => item.place || item.category));
+  const { categories: places } = useCategoryOptions(items.map((item) => item.place ?? item.category ?? ""));
 
   const filteredItems = useMemo(() => {
     const search = searchText.trim().toLowerCase();
