@@ -6,8 +6,10 @@ import { useCategoryOptions } from "@/lib/useCategoryOptions";
 type Income = {
   id: string;
   amountPaise: number;
-  category: string;
-  description: string;
+  place?: string;
+  source?: string;
+  category?: string;
+  description?: string;
   date: string;
 };
 
@@ -69,9 +71,11 @@ export default function IncomeListPage() {
     const search = searchText.trim().toLowerCase();
 
     const base = items.filter((item) => {
-      if (categoryFilter && item.category !== categoryFilter) return false;
+      const place = item.place ?? item.category ?? "";
+      const source = item.source ?? item.description ?? "";
+      if (categoryFilter && place !== categoryFilter) return false;
       if (search) {
-        const haystack = `${item.category} ${item.description}`.toLowerCase();
+        const haystack = `${place} ${source}`.toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -102,8 +106,8 @@ export default function IncomeListPage() {
       return value;
     };
 
-    const header = ["Date", "Category", "Description", "Amount_INR"];
-    const rows = filteredItems.map((item) => [item.date, item.category, item.description, (item.amountPaise / 100).toFixed(2)]);
+    const header = ["Date", "Place", "Source", "Amount_INR"];
+    const rows = filteredItems.map((item) => [item.date, item.place ?? item.category ?? "", item.source ?? item.description ?? "", (item.amountPaise / 100).toFixed(2)]);
 
     const csv = [header, ...rows]
       .map((row) => row.map((cell) => escapeCsv(String(cell))).join(","))
@@ -135,7 +139,7 @@ export default function IncomeListPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               className="input-control"
-              placeholder="Search category or description"
+              placeholder="Search place or source"
             />
           </label>
 
@@ -191,8 +195,8 @@ export default function IncomeListPage() {
               <thead className="bg-[var(--surface-muted)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold muted">Date</th>
-                  <th className="px-3 py-3 font-semibold muted">Category</th>
-                  <th className="px-3 py-3 font-semibold muted">Description</th>
+                  <th className="px-3 py-3 font-semibold muted">Place</th>
+                  <th className="px-3 py-3 font-semibold muted">Source</th>
                   <th className="px-3 py-3 text-right font-semibold muted">Amount</th>
                 </tr>
               </thead>
