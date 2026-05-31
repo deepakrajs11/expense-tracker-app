@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCategoryOptions } from "@/lib/useCategoryOptions";
 
-type Expense = {
+type Transaction = {
   id: string;
   amountPaise: number;
-  category: string;
-  description: string;
+  type: "expense" | "income";
+  category?: string;
+  description?: string;
+  place?: string;
+  source?: string;
   date: string;
 };
 
@@ -39,10 +42,11 @@ const readJson = async <T,>(response: Response): Promise<T> => {
   return (await response.json()) as T;
 };
 
-const buildTrendSeries = (items: Expense[]) => {
+const buildTrendSeries = (items: Transaction[]) => {
   const grouped = new Map<string, number>();
   items.forEach((item) => {
-    grouped.set(item.date, (grouped.get(item.date) ?? 0) + item.amountPaise);
+    const value = item.type === "income" ? item.amountPaise : -item.amountPaise;
+    grouped.set(item.date, (grouped.get(item.date) ?? 0) + value);
   });
 
   const entries = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
@@ -59,12 +63,14 @@ const buildTrendSeries = (items: Expense[]) => {
   const innerHeight = height - padY * 2;
 
   const values = entries.map(([, value]) => value);
-  const max = Math.max(...values, 1);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = Math.max(max - min, 1);
 
   const points = entries.map(([date, value], index) => {
     const x =
       entries.length === 1 ? padX + innerWidth / 2 : padX + (index / (entries.length - 1)) * innerWidth;
-    const y = padY + (1 - value / max) * innerHeight;
+    const y = padY + (1 - (value - min) / range) * innerHeight;
     return { x, y, date, value };
   });
 
@@ -73,7 +79,7 @@ const buildTrendSeries = (items: Expense[]) => {
     .join(" ");
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-    const value = Math.round((1 - ratio) * max);
+    const value = Math.round(min + (1 - ratio) * range);
     const y = padY + ratio * innerHeight;
     return { value, y };
   });
@@ -82,7 +88,7 @@ const buildTrendSeries = (items: Expense[]) => {
 };
 
 export default function TrendsPage() {
-  const [items, setItems] = useState<Expense[]>([]);
+  const [items, setItems] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,27 +101,42 @@ export default function TrendsPage() {
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/expenses?sort=date_desc", { cache: "no-store" });
-      if (!response.ok) throw new Error("Failed to fetch expenses.");
-      const data = await readJson<{ expenses: Expense[] }>(response);
-      setItems(data.expenses);
+      const [expResponse, incResponse] = await Promise.all([
+        fetch("/api/expenses?sort=date_desc", { cache: "no-store" }),
+        fetch("/api/incomes?sort=date_desc", { cache: "no-store" }),
+      ]);
+
+      if (!expResponse.ok || !incResponse.ok) {
+        throw new Error("Failed to fetch transactions.");
+      }
+
+      const [expData, incData] = await Promise.all([
+        readJson<{ expenses: Transaction[] }>(expResponse),
+        readJson<{ incomes: Transaction[] }>(incResponse),
+      ]);
+
+      const expenseItems = expData.expenses.map((item) => ({ ...item, type: "expense" as const }));
+      const incomeItems = incData.incomes.map((item) => ({ ...item, type: "income" as const }));
+      setItems([...expenseItems, ...incomeItems].sort((a, b) => b.date.localeCompare(a.date)));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Failed to fetch expenses.");
+      setError(loadError instanceof Error ? loadError.message : "Failed to fetch transactions.");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  const { categories } = useCategoryOptions(items.map((item) => item.category));
+  const { categories } = useCategoryOptions(
+    items.map((item) => (item.type === "income" ? item.place : item.category) ?? ""),
+  );
 
   const filteredItems = useMemo(() => {
     const search = searchText.trim().toLowerCase();
@@ -123,13 +144,15 @@ export default function TrendsPage() {
     const maxPaise = amountMax ? Math.round(Number.parseFloat(amountMax) * 100) : null;
 
     const base = items.filter((item) => {
-      if (categoryFilter && item.category !== categoryFilter) return false;
+      const placeOrCategory = item.type === "income" ? item.place ?? "" : item.category ?? "";
+      const sourceOrDescription = item.type === "income" ? item.source ?? "" : item.description ?? "";
+      if (categoryFilter && placeOrCategory !== categoryFilter) return false;
       if (dateFrom && item.date < dateFrom) return false;
       if (dateTo && item.date > dateTo) return false;
       if (Number.isFinite(minPaise) && minPaise !== null && item.amountPaise < minPaise) return false;
       if (Number.isFinite(maxPaise) && maxPaise !== null && item.amountPaise > maxPaise) return false;
       if (search) {
-        const haystack = `${item.category} ${item.description}`.toLowerCase();
+        const haystack = `${placeOrCategory} ${sourceOrDescription}`.toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -146,7 +169,7 @@ export default function TrendsPage() {
   }, [amountMax, amountMin, categoryFilter, dateFrom, dateTo, items, searchText, sort]);
 
   const total = useMemo(
-    () => filteredItems.reduce((sum, item) => sum + item.amountPaise, 0),
+    () => filteredItems.reduce((sum, item) => sum + (item.type === "income" ? item.amountPaise : -item.amountPaise), 0),
     [filteredItems],
   );
   const series = useMemo(() => buildTrendSeries(filteredItems), [filteredItems]);
@@ -156,7 +179,7 @@ export default function TrendsPage() {
       <header className="panel px-5 py-4 sm:px-6">
         <h2 className="text-2xl font-semibold">Trends</h2>
         <p className="mt-1 text-sm muted">
-          Analyze filtered expense trends with line or bar chart view.
+          Analyze income and expense trends together with line or bar chart view.
         </p>
       </header>
 
@@ -185,13 +208,13 @@ export default function TrendsPage() {
           </label>
 
           <label className="flex flex-col gap-1.5 text-sm font-medium">
-            Category
+            Place / Category
             <select
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
               className="input-control"
             >
-              <option value="">All categories</option>
+              <option value="">All places / categories</option>
               {categories.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -244,30 +267,29 @@ export default function TrendsPage() {
           </label>
 
           <div className="panel-muted grid place-items-center px-4 py-2 text-sm sm:mt-6 xl:mt-0">
-            <p>
-              Total: <span className="font-semibold">{formatInr(total)}</span>
+            <p className="mb-3">
+              Net: <span className="font-semibold">{formatInr(total)}</span>
             </p>
-          </div>
 
-          <div className="flex items-end">
-            <button
-              type="button"
-              className="btn-secondary w-full text-sm"
-              onClick={() => {
-                setChartType("line");
-                setCategoryFilter("");
-                setSort("date_desc");
-                setSearchText("");
-                setDateFrom("");
-                setDateTo("");
-                setAmountMin("");
-                setAmountMax("");
-              }}
-            >
-              Clear Filters
-            </button>
+            <div className="flex items-end w-full">
+              <button
+                type="button"
+                className="btn-secondary w-full text-sm"
+                onClick={() => {
+                  setChartType("line");
+                  setCategoryFilter("");
+                  setSort("date_desc");
+                  setSearchText("");
+                  setDateFrom("");
+                  setDateTo("");
+                  setAmountMin("");
+                  setAmountMax("");
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
           </div>
-        </div>
 
         {error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{error}</p> : null}
 
@@ -279,7 +301,7 @@ export default function TrendsPage() {
             </div>
           ) : series.points.length < 2 ? (
             <div className="grid h-[290px] place-items-center text-sm muted">
-              Not enough points for trend visualization.
+              Add more income or expense entries to visualize trends.
             </div>
           ) : (
             <div>
@@ -372,7 +394,7 @@ export default function TrendsPage() {
                   fill="var(--text-muted)"
                   transform={`rotate(-90 20 ${series.height / 2})`}
                 >
-                  Spend (INR)
+                  Cash Flow (INR)
                 </text>
               </svg>
               <div className="mt-1 flex items-center justify-between px-2 text-xs muted">
@@ -382,6 +404,7 @@ export default function TrendsPage() {
             </div>
           )}
         </div>
+      </div>
       </section>
     </div>
   );
