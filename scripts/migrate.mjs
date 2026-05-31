@@ -1,4 +1,12 @@
 import { Pool } from "pg";
+import "dotenv/config";
+
+// console.log({
+//   DB_HOST: process.env.DB_HOST,
+//   DB_NAME: process.env.DB_NAME,
+//   DB_USER: process.env.DB_USER,
+//   DB_PASSWORD: process.env.DB_PASSWORD ? "***" : undefined,
+// });
 
 const parsePort = (value, fallback) => {
   if (!value) return fallback;
@@ -68,6 +76,16 @@ const migrationSql = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
+  CREATE TABLE IF NOT EXISTS incomes (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+    place VARCHAR(60) NOT NULL,
+    source VARCHAR(250) NOT NULL,
+    income_date DATE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
   DO $$
   BEGIN
     IF NOT EXISTS (
@@ -110,11 +128,25 @@ const migrationSql = `
   CREATE INDEX IF NOT EXISTS expenses_user_id_idx ON expenses (user_id);
   CREATE INDEX IF NOT EXISTS expenses_user_id_date_idx ON expenses (user_id, expense_date DESC, created_at DESC);
 
+  CREATE INDEX IF NOT EXISTS incomes_income_date_idx ON incomes (income_date DESC);
+  CREATE INDEX IF NOT EXISTS incomes_place_idx ON incomes (place);
+  CREATE INDEX IF NOT EXISTS incomes_user_id_idx ON incomes (user_id);
+  CREATE INDEX IF NOT EXISTS incomes_user_id_date_idx ON incomes (user_id, income_date DESC, created_at DESC);
+
   CREATE TABLE IF NOT EXISTS expense_idempotency (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     idempotency_key VARCHAR(200) NOT NULL,
     request_hash CHAR(64) NOT NULL,
     expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, idempotency_key)
+  );
+
+  CREATE TABLE IF NOT EXISTS income_idempotency (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    idempotency_key VARCHAR(200) NOT NULL,
+    request_hash CHAR(64) NOT NULL,
+    income_id UUID NOT NULL REFERENCES incomes(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, idempotency_key)
   );
@@ -136,6 +168,18 @@ const migrationSql = `
   FROM expenses e
   WHERE ei.expense_id = e.id
     AND ei.user_id IS NULL;
+
+  DO $$
+  BEGIN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_name = 'income_idempotency'
+        AND column_name = 'user_id'
+    ) THEN
+      -- nothing
+    END IF;
+  END $$;
 
   ALTER TABLE expense_idempotency
   ALTER COLUMN user_id SET NOT NULL;

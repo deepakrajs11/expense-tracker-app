@@ -161,6 +161,8 @@ const run = async () => {
 
     await client.query(`DELETE FROM expense_idempotency WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM expenses WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM income_idempotency WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM incomes WHERE user_id = $1`, [userId]);
 
     const rows = buildExpenseRows(userId);
     for (const row of rows) {
@@ -170,6 +172,33 @@ const run = async () => {
           VALUES ($1, $2, $3, $4, $5, $6, $7)
         `,
         [row.id, row.user_id, row.amount, row.category, row.description, row.expense_date, row.created_at],
+      );
+    }
+
+    // Seed a few incomes (monthly salary + occasional)
+    const incomeRows = [];
+    const now = new Date();
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(now);
+      d.setMonth(now.getMonth() - i);
+      incomeRows.push({
+        id: randomUUID(),
+        user_id: userId,
+        amount: (45000 + i * 1000).toFixed(2),
+        place: "Employer",
+        source: "Monthly salary",
+        income_date: toYmd(d),
+        created_at: new Date(d.getTime() + 10 * 60 * 60 * 1000).toISOString(),
+      });
+    }
+
+    for (const r of incomeRows) {
+      await client.query(
+        `
+          INSERT INTO incomes (id, user_id, amount, place, source, income_date, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `,
+        [r.id, r.user_id, r.amount, r.place, r.source, r.income_date, r.created_at],
       );
     }
 

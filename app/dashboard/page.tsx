@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-type Expense = {
+type Transaction = {
   id: string;
   amountPaise: number;
-  category: string;
-  description: string;
+  type: "expense" | "income";
+  category?: string;
+  description?: string;
+  place?: string;
+  source?: string;
   date: string;
 };
 
@@ -41,10 +44,11 @@ const readJson = async <T,>(response: Response): Promise<T> => {
   return (await response.json()) as T;
 };
 
-const buildTrendPoints = (items: Expense[]) => {
+const buildTrendPoints = (items: Transaction[]) => {
   const grouped = new Map<string, number>();
   items.forEach((item) => {
-    grouped.set(item.date, (grouped.get(item.date) ?? 0) + item.amountPaise);
+    const value = item.type === "income" ? item.amountPaise : -item.amountPaise;
+    grouped.set(item.date, (grouped.get(item.date) ?? 0) + value);
   });
 
   const entries = Array.from(grouped.entries())
@@ -110,7 +114,7 @@ const buildTrendPoints = (items: Expense[]) => {
 };
 
 export default function DashboardOverviewPage() {
-  const [items, setItems] = useState<Expense[]>([]);
+  const [items, setItems] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,10 +124,30 @@ export default function DashboardOverviewPage() {
       setError(null);
 
       try {
-        const response = await fetch("/api/expenses?sort=date_desc", { cache: "no-store" });
-        if (!response.ok) throw new Error("Failed to load dashboard summary.");
-        const data = await readJson<{ expenses: Expense[] }>(response);
-        setItems(data.expenses);
+        const [expResponse, incResponse] = await Promise.all([
+          fetch("/api/expenses?sort=date_desc", { cache: "no-store" }),
+          fetch("/api/incomes?sort=date_desc", { cache: "no-store" }),
+        ]);
+
+        if (!expResponse.ok || !incResponse.ok) {
+          throw new Error("Failed to load dashboard summary.");
+        }
+
+        const [expData, incData] = await Promise.all([
+          readJson<{ expenses: Transaction[] }>(expResponse),
+          readJson<{ incomes: Transaction[] }>(incResponse),
+        ]);
+
+        const expenseItems = expData.expenses.map((item) => ({
+          ...item,
+          type: "expense" as const,
+        }));
+        const incomeItems = incData.incomes.map((item) => ({
+          ...item,
+          type: "income" as const,
+        }));
+
+        setItems([...incomeItems, ...expenseItems].sort((a, b) => b.date.localeCompare(a.date)));
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : "Failed to load dashboard summary.");
       } finally {
@@ -134,9 +158,16 @@ export default function DashboardOverviewPage() {
     load();
   }, []);
 
-  const total = useMemo(() => items.reduce((sum, item) => sum + item.amountPaise, 0), [items]);
+  const totalIncome = useMemo(
+    () => items.filter((item) => item.type === "income").reduce((sum, item) => sum + item.amountPaise, 0),
+    [items],
+  );
+  const totalExpense = useMemo(
+    () => items.filter((item) => item.type === "expense").reduce((sum, item) => sum + item.amountPaise, 0),
+    [items],
+  );
+  const netBalance = totalIncome - totalExpense;
   const recent = useMemo(() => items.slice(0, 5), [items]);
-  const categories = useMemo(() => Array.from(new Set(items.map((item) => item.category))).length, [items]);
   const trend = useMemo(() => buildTrendPoints(items), [items]);
 
   return (
@@ -144,33 +175,33 @@ export default function DashboardOverviewPage() {
       <header className="panel px-5 py-4 sm:px-6">
         <h2 className="text-2xl font-semibold">Overview</h2>
         <p className="mt-1 text-sm muted">
-          Quick summary of your current expenses. Use navigation for add and full list pages.
+          Quick summary of your income, expenses, and net balance. Use navigation for add and list pages.
         </p>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="panel p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Total Spend</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Total Income</p>
           {isLoading ? (
             <div className="skeleton mt-2 h-7 w-28" />
           ) : (
-            <p className="mt-2 text-xl font-semibold">{formatInr(total)}</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--positive)]">{formatInr(totalIncome)}</p>
           )}
         </div>
         <div className="panel p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Expenses</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Total Expense</p>
           {isLoading ? (
             <div className="skeleton mt-2 h-7 w-16" />
           ) : (
-            <p className="mt-2 text-xl font-semibold">{items.length}</p>
+            <p className="mt-2 text-xl font-semibold text-[var(--danger)]">{formatInr(totalExpense)}</p>
           )}
         </div>
         <div className="panel p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Categories</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] muted">Balance</p>
           {isLoading ? (
             <div className="skeleton mt-2 h-7 w-16" />
           ) : (
-            <p className="mt-2 text-xl font-semibold">{categories}</p>
+            <p className="mt-2 text-xl font-semibold">{formatInr(netBalance)}</p>
           )}
         </div>
       </div>
@@ -178,7 +209,7 @@ export default function DashboardOverviewPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="panel p-5">
           <div className="flex items-end justify-between gap-3">
-            <h3 className="text-lg font-semibold">2-Month Spending Trend</h3>
+            <h3 className="text-lg font-semibold">2-Month Cash Flow Trend</h3>
             <Link href="/dashboard/trends" className="text-sm font-semibold underline">
               More options
             </Link>
@@ -194,7 +225,7 @@ export default function DashboardOverviewPage() {
               </div>
             ) : trend.points.length < 2 ? (
               <div className="grid h-[210px] place-items-center text-sm muted">
-                Add more expenses to view spending trend.
+                Add more transactions to view cash flow trend.
               </div>
             ) : (
               <div>
@@ -262,7 +293,7 @@ export default function DashboardOverviewPage() {
                     fill="var(--text-muted)"
                     transform={`rotate(-90 16 ${trend.height / 2})`}
                   >
-                    Spend (INR)
+                    Cash Flow (INR)
                   </text>
                 </svg>
                 <div className="mt-1 flex items-center justify-between px-2 text-xs muted">
@@ -278,8 +309,9 @@ export default function DashboardOverviewPage() {
               <thead className="bg-[var(--surface-muted)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold muted">Date</th>
-                  <th className="px-3 py-3 font-semibold muted">Category</th>
-                  <th className="px-3 py-3 font-semibold muted">Description</th>
+                  <th className="px-3 py-3 font-semibold muted">Type</th>
+                  <th className="px-3 py-3 font-semibold muted">Place / Category</th>
+                  <th className="px-3 py-3 font-semibold muted">Source / Description</th>
                   <th className="px-3 py-3 text-right font-semibold muted">Amount</th>
                 </tr>
               </thead>
@@ -287,24 +319,31 @@ export default function DashboardOverviewPage() {
                 {isLoading ? (
                   [...Array.from({ length: 4 })].map((_, index) => (
                     <tr key={`overview-loading-${index}`} className="border-t border-[var(--border)]">
-                      <td colSpan={4} className="px-3 py-3">
+                      <td colSpan={5} className="px-3 py-3">
                         <div className="skeleton h-4 w-full" />
                       </td>
                     </tr>
                   ))
                 ) : recent.length === 0 ? (
                   <tr className="border-t border-[var(--border)]">
-                    <td colSpan={4} className="px-3 py-6 muted">
-                      No expenses found.
+                    <td colSpan={5} className="px-3 py-6 muted">
+                      No transactions found.
                     </td>
                   </tr>
                 ) : (
                   recent.map((item) => (
                     <tr key={item.id} className="border-t border-[var(--border)]">
                       <td className="px-3 py-3">{formatDate(item.date)}</td>
-                      <td className="px-3 py-3">{item.category}</td>
-                      <td className="px-3 py-3 muted">{item.description}</td>
-                      <td className="px-3 py-3 text-right font-semibold">{formatInr(item.amountPaise)}</td>
+                      <td className="px-3 py-3">{item.type === "income" ? "Income" : "Expense"}</td>
+                      <td className="px-3 py-3">{item.type === "income" ? item.place : item.category}</td>
+                      <td className="px-3 py-3 muted">{item.type === "income" ? item.source : item.description}</td>
+                      <td
+                        className={`px-3 py-3 text-right font-semibold ${
+                          item.type === "income" ? "text-[var(--positive)]" : "text-[var(--danger)]"
+                        }`}
+                      >
+                        {item.type === "income" ? "+" : "-"}{formatInr(item.amountPaise)}
+                      </td>
                     </tr>
                   ))
                 )}

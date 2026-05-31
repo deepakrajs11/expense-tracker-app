@@ -126,11 +126,20 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                   <nav className="mt-5 grid gap-2">
                     <NavItem href="/dashboard" label="Overview" active={pathname === "/dashboard"} />
                     <NavItem href="/dashboard/add" label="Add Expense" active={pathname === "/dashboard/add"} />
+                    <NavItem href="/dashboard/add-income" label="Add Income" active={pathname === "/dashboard/add-income"} />
+
                     <NavItem
                       href="/dashboard/expenses"
                       label="Expense List"
                       active={pathname === "/dashboard/expenses"}
                     />
+                    <NavItem
+                      href="/dashboard/incomes"
+                      label="Income List"
+                      active={pathname === "/dashboard/incomes"}
+                    />
+
+                    <NavItem href="/dashboard/finances" label="Finances" active={pathname === "/dashboard/finances"} />
                     <NavItem href="/dashboard/trends" label="Trends" active={pathname === "/dashboard/trends"} />
                   </nav>
                 </aside>
