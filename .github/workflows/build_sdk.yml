@@ -1,0 +1,37 @@
+name: Build Android SDK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android-sdk/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK tools
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          force-avd-creation: false
+
+      - name: Build release APK
+        working-directory: android-sdk
+        run: |
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-sdk-apk
+          path: android-sdk/app/build/outputs/apk/release/*.apk
