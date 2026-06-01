@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "node --env-file=.env scripts/migrate.mjs",
-    "db:seed-demo": "node --env-file=.env scripts/seed-demo.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed-demo": "node scripts/seed-demo.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

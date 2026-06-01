@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       if (existing.rowCount) {
         const priorExpense = await client.query(
           `
-            SELECT id, amount::text AS amount, category, description, expense_date::text AS date, created_at::text
+            SELECT id, amount::text AS amount, category, description, place, expense_date::text AS date, created_at::text
             FROM expenses
             WHERE id = $1 AND user_id = $2
           `,
@@ -76,11 +76,11 @@ export async function POST(request: Request) {
 
       const inserted = await client.query(
         `
-          INSERT INTO expenses (id, user_id, amount, category, description, expense_date)
-          VALUES ($1, $2, $3, $4, $5, $6)
-          RETURNING id, amount::text AS amount, category, description, expense_date::text AS date, created_at::text
+          INSERT INTO expenses (id, user_id, amount, category, description, place, expense_date)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id, amount::text AS amount, category, description, place, expense_date::text AS date, created_at::text
         `,
-        [randomUUID(), user.id, input.amount, input.category, input.description, input.date],
+        [randomUUID(), user.id, input.amount, input.category, input.description, input.place, input.date],
       );
 
       await client.query(
@@ -135,7 +135,7 @@ export async function GET(request: Request) {
     const orderBy = sort === "date_desc" || !sort ? "ORDER BY expense_date DESC, created_at DESC" : "";
 
     const query = `
-      SELECT id, amount::text AS amount, category, description, expense_date::text AS date, created_at::text
+      SELECT id, amount::text AS amount, category, description, place, expense_date::text AS date, created_at::text
       FROM expenses
       ${where}
       ${orderBy}

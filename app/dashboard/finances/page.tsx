@@ -73,6 +73,33 @@ export default function FinancesPage() {
   const totalExpense = useMemo(() => expenses.reduce((s, e) => s + e.amountPaise, 0), [expenses]);
   const balance = totalIncome - totalExpense;
 
+  const balanceByPlace = useMemo(() => {
+    const placeMap = new Map<string, { income: number; expense: number }>();
+
+    incomes.forEach((income) => {
+      if (income.place) {
+        const existing = placeMap.get(income.place) || { income: 0, expense: 0 };
+        placeMap.set(income.place, { ...existing, income: existing.income + income.amountPaise });
+      }
+    });
+
+    expenses.forEach((expense) => {
+      if (expense.place) {
+        const existing = placeMap.get(expense.place) || { income: 0, expense: 0 };
+        placeMap.set(expense.place, { ...existing, expense: existing.expense + expense.amountPaise });
+      }
+    });
+
+    return Array.from(placeMap.entries())
+      .map(([place, { income, expense }]) => ({
+        place,
+        income,
+        expense,
+        balance: income - expense,
+      }))
+      .sort((a, b) => b.balance - a.balance);
+  }, [incomes, expenses]);
+
   const merged = useMemo(() => {
     const combined: Entry[] = [...incomes, ...expenses];
     combined.sort((a, b) => b.date.localeCompare(a.date));
@@ -98,6 +125,54 @@ export default function FinancesPage() {
         <div className="panel p-4">
           <p className="text-sm muted">Current Balance</p>
           <p className="mt-2 text-2xl font-semibold">{formatInr(balance)}</p>
+        </div>
+      </section>
+
+      <section className="panel p-5">
+        <h3 className="text-lg font-semibold">Balance by Source/Place</h3>
+        <p className="mt-1 text-sm muted">Current balance for each income source</p>
+
+        <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
+          <div className="max-h-[480px] overflow-auto">
+            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+              <thead className="bg-[var(--surface-muted)]">
+                <tr>
+                  <th className="px-3 py-3 font-semibold muted">Place/Source</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Income</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Expenses</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  [...Array.from({ length: 4 })].map((_, index) => (
+                    <tr key={`loading-${index}`} className="border-t border-[var(--border)]">
+                      <td colSpan={4} className="px-3 py-3">
+                        <div className="skeleton h-3 w-full" />
+                      </td>
+                    </tr>
+                  ))
+                ) : balanceByPlace.length === 0 ? (
+                  <tr className="border-t border-[var(--border)]">
+                    <td colSpan={4} className="px-3 py-7 text-center muted">
+                      No sources found.
+                    </td>
+                  </tr>
+                ) : (
+                  balanceByPlace.map((item) => (
+                    <tr key={item.place} className="border-t border-[var(--border)]">
+                      <td className="px-3 py-3 font-medium">{item.place}</td>
+                      <td className="px-3 py-3 text-right text-[var(--positive)]">{formatInr(item.income)}</td>
+                      <td className="px-3 py-3 text-right text-[var(--danger)]">{formatInr(item.expense)}</td>
+                      <td className={`px-3 py-3 text-right font-semibold ${item.balance >= 0 ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>
+                        {formatInr(item.balance)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 

@@ -4,6 +4,7 @@ export type NewExpenseInput = {
   amount: string;
   category: string;
   description: string;
+  place: string;
   date: string;
 };
 
@@ -12,6 +13,7 @@ export type ExpenseRow = {
   amount: string;
   category: string;
   description: string;
+  place: string;
   date: string;
   created_at: string;
 };
@@ -71,6 +73,7 @@ export const parseNewExpense = (payload: unknown): NewExpenseInput => {
     amount: parseAmount(body.amount),
     category: validateText(body.category, "Category", 60),
     description: validateText(body.description, "Description", 250),
+    place: validateText(body.place, "Place", 60),
     date: validateDate(body.date),
   };
 };
@@ -80,6 +83,7 @@ export const buildRequestHash = (input: NewExpenseInput): string => {
     amount: input.amount,
     category: input.category,
     description: input.description,
+    place: input.place,
     date: input.date,
   });
   return createHash("sha256").update(canonical).digest("hex");
@@ -100,6 +104,7 @@ export const normalizeExpense = (row: ExpenseRow) => {
     amountPaise,
     category: row.category,
     description: row.description,
+    place: row.place,
     date: row.date,
     created_at: row.created_at,
   };

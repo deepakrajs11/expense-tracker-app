@@ -72,6 +72,7 @@ const migrationSql = `
     amount NUMERIC(12,2) NOT NULL CHECK (amount > 0),
     category VARCHAR(60) NOT NULL,
     description VARCHAR(250) NOT NULL,
+    place VARCHAR(60),
     expense_date DATE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
