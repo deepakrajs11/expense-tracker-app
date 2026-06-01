@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCategoryOptions } from "@/lib/useCategoryOptions";
 
 type Transaction = {
@@ -42,49 +42,96 @@ const readJson = async <T,>(response: Response): Promise<T> => {
   return (await response.json()) as T;
 };
 
-const buildTrendSeries = (items: Transaction[]) => {
-  const grouped = new Map<string, number>();
+const buildTrendSeries = (items: Transaction[], widthOverride?: number) => {
+  const grouped = new Map<string, { income: number; expense: number }>();
   items.forEach((item) => {
-    const value = item.type === "income" ? item.amountPaise : -item.amountPaise;
-    grouped.set(item.date, (grouped.get(item.date) ?? 0) + value);
+    const dateKey = item.date;
+    const current = grouped.get(dateKey) ?? { income: 0, expense: 0 };
+    if (item.type === "income") {
+      current.income += item.amountPaise;
+    } else {
+      current.expense += item.amountPaise;
+    }
+    grouped.set(dateKey, current);
   });
 
   const entries = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  const width = 920;
+  const width = widthOverride ?? 920;
   const height = 290;
-  const padX = 98;
+  // padding scales with width so chart fits smaller screens better
+  const padX = Math.min(98, Math.max(24, Math.round(width * 0.08)));
   const padY = 24;
 
   if (!entries.length) {
-    return { points: [], path: "", maxValue: 0, width, height, padX, padY, yTicks: [] as { value: number; y: number }[] };
+    return {
+      points: [],
+      incomePath: "",
+      expensePath: "",
+      width,
+      height,
+      padX,
+      padY,
+      yTicks: [] as { value: number; y: number }[],
+      baselineY: padY,
+    };
   }
 
   const innerWidth = width - padX * 2;
   const innerHeight = height - padY * 2;
 
-  const values = entries.map(([, value]) => value);
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = Math.max(max - min, 1);
-
-  const points = entries.map(([date, value], index) => {
+  const points = entries.map(([date, values], index) => {
     const x =
       entries.length === 1 ? padX + innerWidth / 2 : padX + (index / (entries.length - 1)) * innerWidth;
-    const y = padY + (1 - (value - min) / range) * innerHeight;
-    return { x, y, date, value };
+    return {
+      date,
+      x,
+      income: values.income,
+      expense: values.expense,
+      net: values.income - values.expense,
+    };
   });
 
-  const path = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+  const maxIncome = Math.max(0, ...points.map((point) => point.income));
+  const maxExpense = Math.max(0, ...points.map((point) => point.expense));
+  const max = maxIncome;
+  const min = -maxExpense;
+  const range = Math.max(max - min, 1);
+
+  const pointsWithCoords = points.map((point) => {
+    const incomeY = padY + (1 - (point.income - min) / range) * innerHeight;
+    const expenseY = padY + (1 - (-point.expense - min) / range) * innerHeight;
+    const netY = padY + (1 - (point.net - min) / range) * innerHeight;
+    return { ...point, incomeY, expenseY, netY };
+  });
+
+  const incomePath = pointsWithCoords
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.incomeY.toFixed(2)}`)
+    .join(" ");
+  const expensePath = pointsWithCoords
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.expenseY.toFixed(2)}`)
     .join(" ");
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-    const value = Math.round(min + (1 - ratio) * range);
-    const y = padY + ratio * innerHeight;
+  const ticks = 4;
+  const yTicks = Array.from({ length: ticks + 1 }).map((_, i) => {
+    const ratio = i / ticks; // 0..1 from top to bottom
+    const value = Math.round(max - ratio * (max - min));
+    const y = padY + (1 - (value - min) / range) * innerHeight;
     return { value, y };
   });
 
-  return { points, path, maxValue: max, width, height, padX, padY, yTicks };
+  const baselineY = padY + (1 - (0 - min) / range) * innerHeight;
+
+  return {
+    points: pointsWithCoords,
+    incomePath,
+    expensePath,
+    width,
+    height,
+    padX,
+    padY,
+    yTicks,
+    baselineY,
+  };
 };
 
 export default function TrendsPage() {
@@ -172,7 +219,23 @@ export default function TrendsPage() {
     () => filteredItems.reduce((sum, item) => sum + (item.type === "income" ? item.amountPaise : -item.amountPaise), 0),
     [filteredItems],
   );
-  const series = useMemo(() => buildTrendSeries(filteredItems), [filteredItems]);
+  // responsive container for the chart
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.floor(entry.contentRect.width);
+        setContainerWidth(w);
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const series = useMemo(() => buildTrendSeries(filteredItems, containerWidth ?? 920), [filteredItems, containerWidth]);
 
   return (
     <div className="grid gap-4">
@@ -290,113 +353,144 @@ export default function TrendsPage() {
               </button>
             </div>
           </div>
+        </div>
 
         {error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{error}</p> : null}
 
         <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3">
           {isLoading ? (
-            <div className="grid h-[290px] gap-3 p-2">
+            <div className="grid h-[220px] sm:h-[290px] gap-3 p-2">
               <div className="skeleton h-4 w-40" />
               <div className="skeleton h-full w-full" />
             </div>
-          ) : series.points.length < 2 ? (
-            <div className="grid h-[290px] place-items-center text-sm muted">
-              Add more income or expense entries to visualize trends.
+          ) : series.points.length === 0 ? (
+            <div className="grid h-[220px] sm:h-[290px] place-items-center text-sm muted">
+              Add more transactions to view cash flow trend.
             </div>
           ) : (
             <div>
-              <svg viewBox={`0 0 ${series.width} ${series.height}`} className="h-[290px] w-full">
-                {series.yTicks.map((tick) => (
-                  <g key={`tick-${tick.y}`}>
-                    <line
-                      x1={series.padX}
-                      y1={tick.y}
-                      x2={series.width - series.padX}
-                      y2={tick.y}
-                      stroke="var(--border)"
-                      strokeDasharray="3 4"
-                      opacity={0.6}
-                    />
-                    <text
-                      x={series.padX - 8}
-                      y={tick.y + 3}
-                      textAnchor="end"
-                      fontSize="10"
-                      fill="var(--text-muted)"
-                    >
-                      {formatAxisInr(tick.value)}
-                    </text>
-                  </g>
-                ))}
-                <line
-                  x1={series.padX}
-                  y1={series.height - series.padY}
-                  x2={series.width - series.padX}
-                  y2={series.height - series.padY}
-                  stroke="var(--border)"
-                />
-                <line
-                  x1={series.padX}
-                  y1={series.padY}
-                  x2={series.padX}
-                  y2={series.height - series.padY}
-                  stroke="var(--border)"
-                />
-                {chartType === "line" ? (
-                  <>
-                    <path
-                      d={series.path}
-                      fill="none"
-                      stroke="var(--primary)"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    {series.points.map((point) => (
-                      <circle key={`${point.date}-${point.x}`} cx={point.x} cy={point.y} r={3.4} fill="var(--primary)" />
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {series.points.map((point) => {
-                      const barWidth = Math.max(
-                        6,
-                        (series.width - series.padX * 2) / Math.max(series.points.length, 1) - 4,
-                      );
-                      return (
-                        <rect
-                          key={`${point.date}-${point.x}`}
-                          x={point.x - barWidth / 2}
-                          y={point.y}
-                          width={barWidth}
-                          height={series.height - series.padY - point.y}
-                          rx={2}
-                          fill="var(--primary)"
-                          opacity={0.9}
-                        />
-                      );
-                    })}
-                  </>
-                )}
-                <text
-                  x={series.width / 2}
-                  y={series.height - 4}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill="var(--text-muted)"
-                >
-                  Date
-                </text>
-                <text
-                  x="20"
-                  y={series.height / 2}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill="var(--text-muted)"
-                  transform={`rotate(-90 20 ${series.height / 2})`}
-                >
-                  Cash Flow (INR)
-                </text>
-              </svg>
+              <div ref={containerRef} className="w-full">
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)]">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--success)]" /> Income
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-1">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--danger)]" /> Expense
+                  </span>
+                </div>
+                <svg viewBox={`0 0 ${series.width} ${series.height}`} className="h-[220px] sm:h-[290px] w-full">
+                  {series.yTicks.map((tick, idx) => (
+                    <g key={`tick-${idx}`}>
+                      <line
+                        x1={series.padX}
+                        y1={tick.y}
+                        x2={series.width - series.padX}
+                        y2={tick.y}
+                        stroke="var(--border)"
+                        strokeDasharray="3 4"
+                        opacity={0.6}
+                      />
+                      <text
+                        x={series.padX - 8}
+                        y={tick.y + 3}
+                        textAnchor="end"
+                        fontSize="10"
+                        fill="var(--text-muted)"
+                      >
+                        {formatAxisInr(tick.value)}
+                      </text>
+                    </g>
+                  ))}
+                  <line
+                    x1={series.padX}
+                    y1={series.baselineY}
+                    x2={series.width - series.padX}
+                    y2={series.baselineY}
+                    stroke="var(--border)"
+                    strokeDasharray="4 3"
+                  />
+                  <line
+                    x1={series.padX}
+                    y1={series.padY}
+                    x2={series.padX}
+                    y2={series.height - series.padY}
+                    stroke="var(--border)"
+                  />
+                  {chartType === "line" ? (
+                    <>
+                      <path
+                        d={series.incomePath}
+                        fill="none"
+                        stroke="var(--success)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d={series.expensePath}
+                        fill="none"
+                        stroke="var(--danger)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      {series.points.map((point) => (
+                        <g key={`${point.date}-${point.x}`}>
+                          <circle cx={point.x} cy={point.incomeY} r={3} fill="var(--success)" />
+                          <circle cx={point.x} cy={point.expenseY} r={3} fill="var(--danger)" />
+                        </g>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {series.points.map((point) => {
+                        const available = Math.max(1, series.points.length);
+                        const barSlot = (series.width - series.padX * 2) / available;
+                        const barWidth = Math.max(6, barSlot * 0.36);
+                        return (
+                          <g key={`${point.date}-${point.x}`}>
+                            <rect
+                              x={point.x - barSlot / 2 - barWidth / 2}
+                              y={point.incomeY}
+                              width={barWidth}
+                              height={series.baselineY - point.incomeY}
+                              rx={2}
+                              fill="var(--success)"
+                              opacity={0.9}
+                            />
+                            <rect
+                              x={point.x + barSlot / 2 - barWidth / 2}
+                              y={series.baselineY}
+                              width={barWidth}
+                              height={point.expenseY - series.baselineY}
+                              rx={2}
+                              fill="var(--danger)"
+                              opacity={0.9}
+                            />
+                          </g>
+                        );
+                      })}
+                    </>
+                  )}
+                  <text
+                    x={series.width / 2}
+                    y={series.height - 4}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="var(--text-muted)"
+                  >
+                    Date
+                  </text>
+                  <text
+                    x="20"
+                    y={series.height / 2}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="var(--text-muted)"
+                    transform={`rotate(-90 20 ${series.height / 2})`}
+                  >
+                    Cash Flow (INR)
+                  </text>
+                </svg>
+              </div>
               <div className="mt-1 flex items-center justify-between px-2 text-xs muted">
                 <span>{series.points[0] ? formatDate(series.points[0].date) : "-"}</span>
                 <span>{series.points.at(-1) ? formatDate(series.points.at(-1)!.date) : "-"}</span>
@@ -404,7 +498,6 @@ export default function TrendsPage() {
             </div>
           )}
         </div>
-      </div>
       </section>
     </div>
   );
