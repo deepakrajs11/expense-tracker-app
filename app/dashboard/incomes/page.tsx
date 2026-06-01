@@ -174,7 +174,7 @@ export default function IncomeListPage() {
           </label>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 items-center gap-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 items-center">
           <div className="panel-muted px-4 py-2 text-sm">
             <p>
               Total: <span className="font-semibold">{formatInr(total)}</span>
@@ -189,9 +189,38 @@ export default function IncomeListPage() {
 
         {error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{error}</p> : null}
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
+        <div className="sm:hidden mt-4 p-2 space-y-3">
+          {isLoading ? (
+            [...Array.from({ length: 4 })].map((_, index) => (
+              <div key={index} className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+                <div className="skeleton h-4 w-32 mb-3" />
+                <div className="skeleton h-3 w-24 mb-2" />
+                <div className="skeleton h-3 w-full" />
+              </div>
+            ))
+          ) : filteredItems.length === 0 ? (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center muted">
+              No incomes found for the selected filters.
+            </div>
+          ) : (
+            filteredItems.map((item) => (
+              <div key={item.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-semibold">{formatDate(item.date)}</span>
+                  <span>{formatInr(item.amountPaise)}</span>
+                </div>
+                <div className="mt-2 text-sm text-[var(--text-muted)]">
+                  <div>{item.place || item.category}</div>
+                  <div>{item.source || item.description}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden sm:block mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
           <div className="max-h-[560px] overflow-auto">
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <table className="w-full min-w-full border-collapse text-left text-sm">
               <thead className="bg-[var(--surface-muted)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold muted">Date</th>
