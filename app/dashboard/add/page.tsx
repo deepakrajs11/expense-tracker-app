@@ -10,6 +10,7 @@ type PendingSubmission = {
     amount: string;
     category: string;
     description: string;
+    place: string;
     date: string;
   };
 };
@@ -29,6 +30,8 @@ export default function AddExpensePage() {
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [description, setDescription] = useState("");
+  const [place, setPlace] = useState("");
+  const [places, setPlaces] = useState<string[]>([]);
   const [date, setDate] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +73,23 @@ export default function AddExpensePage() {
     restore();
   }, [pendingStorageKey]);
 
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      try {
+        const response = await fetch("/api/incomes?sort=date_desc", { cache: "no-store" });
+        if (response.ok) {
+          const data = (await response.json()) as { incomes: Array<{ place: string }> };
+          const uniquePlaces = Array.from(new Set(data.incomes.map((i) => i.place)));
+          setPlaces(uniquePlaces);
+        }
+      } catch {
+        // Silently fail, places won't be available
+      }
+    };
+
+    fetchPlaces();
+  }, []);
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -83,11 +103,17 @@ export default function AddExpensePage() {
       return;
     }
 
+    if (!place.trim()) {
+      setError("Please select a place/source.");
+      setIsSubmitting(false);
+      return;
+    }
+
     if (category === "__custom__") {
       addCategory(chosenCategory);
     }
 
-    const payload = { amount, category: chosenCategory, description, date };
+    const payload = { amount, category: chosenCategory, description, place, date };
     const pending: PendingSubmission = {
       key: createIdempotencyKey(),
       payload,
@@ -102,6 +128,7 @@ export default function AddExpensePage() {
       setCategory("");
       setCustomCategory("");
       setDescription("");
+      setPlace("");
       setDate("");
       setSuccess("Expense saved successfully.");
     } catch (submitError) {
@@ -215,6 +242,23 @@ export default function AddExpensePage() {
               placeholder="e.g. Weekly vegetables"
               maxLength={250}
             />
+          </label>
+
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Source / Place
+            <select
+              required
+              value={place}
+              onChange={(event) => setPlace(event.target.value)}
+              className="input-control"
+            >
+              <option value="">Select place/source</option>
+              {places.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-sm font-medium">

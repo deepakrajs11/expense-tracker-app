@@ -453,9 +453,38 @@ export default function ExpenseListPage() {
 
         {error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{error}</p> : null}
 
-        <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
+        <div className="sm:hidden mt-4 p-2 space-y-3">
+          {isLoading ? (
+            [...Array.from({ length: 4 })].map((_, index) => (
+              <div key={index} className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <div className="skeleton h-4 w-32 mb-3" />
+                <div className="skeleton h-3 w-24 mb-2" />
+                <div className="skeleton h-3 w-full" />
+              </div>
+            ))
+          ) : filteredItems.length === 0 ? (
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-6 text-center muted">
+              No expenses found for the selected filters.
+            </div>
+          ) : (
+            paginatedItems.map((item) => (
+              <div key={item.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <div className="flex items-start justify-between gap-3 text-sm">
+                  <div>
+                    <div className="font-semibold">{item.category}</div>
+                    <div className="text-[var(--text-muted)] text-xs">{formatDate(item.date)}</div>
+                  </div>
+                  <div className="font-semibold text-[var(--danger)]">{formatInr(item.amountPaise)}</div>
+                </div>
+                <div className="mt-2 text-sm text-[var(--text-muted)]">{item.description}</div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden sm:block mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
           <div className="max-h-[560px] overflow-auto">
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+            <table className="w-full min-w-full border-collapse text-left text-sm">
               <thead className="bg-[var(--surface-muted)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold muted">Date</th>

@@ -73,6 +73,33 @@ export default function FinancesPage() {
   const totalExpense = useMemo(() => expenses.reduce((s, e) => s + e.amountPaise, 0), [expenses]);
   const balance = totalIncome - totalExpense;
 
+  const balanceByPlace = useMemo(() => {
+    const placeMap = new Map<string, { income: number; expense: number }>();
+
+    incomes.forEach((income) => {
+      if (income.place) {
+        const existing = placeMap.get(income.place) || { income: 0, expense: 0 };
+        placeMap.set(income.place, { ...existing, income: existing.income + income.amountPaise });
+      }
+    });
+
+    expenses.forEach((expense) => {
+      if (expense.place) {
+        const existing = placeMap.get(expense.place) || { income: 0, expense: 0 };
+        placeMap.set(expense.place, { ...existing, expense: existing.expense + expense.amountPaise });
+      }
+    });
+
+    return Array.from(placeMap.entries())
+      .map(([place, { income, expense }]) => ({
+        place,
+        income,
+        expense,
+        balance: income - expense,
+      }))
+      .sort((a, b) => b.balance - a.balance);
+  }, [incomes, expenses]);
+
   const merged = useMemo(() => {
     const combined: Entry[] = [...incomes, ...expenses];
     combined.sort((a, b) => b.date.localeCompare(a.date));
@@ -102,14 +129,96 @@ export default function FinancesPage() {
       </section>
 
       <section className="panel p-5">
+        <h3 className="text-lg font-semibold">Balance by Source/Place</h3>
+        <p className="mt-1 text-sm muted">Current balance for each income source</p>
+
+        <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
+          {/* Desktop table */}
+          <div className="hidden sm:block max-h-[480px] overflow-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-[var(--surface-muted)]">
+                <tr>
+                  <th className="px-3 py-3 font-semibold muted">Place/Source</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Income</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Expenses</th>
+                  <th className="px-3 py-3 text-right font-semibold muted">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading
+                  ? [...Array.from({ length: 4 })].map((_, index) => (
+                      <tr key={`loading-${index}`} className="border-t border-[var(--border)]">
+                        <td colSpan={4} className="px-3 py-3">
+                          <div className="skeleton h-3 w-full" />
+                        </td>
+                      </tr>
+                    ))
+                  : balanceByPlace.length === 0
+                  ? (
+                    <tr className="border-t border-[var(--border)]">
+                      <td colSpan={4} className="px-3 py-7 text-center muted">
+                        No sources found.
+                      </td>
+                    </tr>
+                  )
+                  : (
+                    balanceByPlace.map((item) => (
+                      <tr key={item.place} className="border-t border-[var(--border)]">
+                        <td className="px-3 py-3 font-medium">{item.place}</td>
+                        <td className="px-3 py-3 text-right text-[var(--positive)]">{formatInr(item.income)}</td>
+                        <td className="px-3 py-3 text-right text-[var(--danger)]">{formatInr(item.expense)}</td>
+                        <td className={`px-3 py-3 text-right font-semibold ${item.balance >= 0 ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>
+                          {formatInr(item.balance)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="sm:hidden p-2">
+            {isLoading ? (
+              [...Array.from({ length: 3 })].map((_, idx) => (
+                <div key={idx} className="mb-3 rounded-lg border px-3 py-3 shadow-sm">
+                  <div className="skeleton h-4 w-32 mb-2" />
+                  <div className="flex justify-between">
+                    <div className="skeleton h-3 w-20" />
+                    <div className="skeleton h-3 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : balanceByPlace.length === 0 ? (
+              <div className="text-center muted py-6">No sources found.</div>
+            ) : (
+              balanceByPlace.map((item) => (
+                <div key={item.place} className="mb-3 rounded-lg border px-3 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{item.place}</div>
+                    <div className={`font-semibold ${item.balance >= 0 ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>{formatInr(item.balance)}</div>
+                  </div>
+                  <div className="mt-2 flex justify-between text-sm muted">
+                    <div>Income: <span className="text-[var(--positive)]">{formatInr(item.income)}</span></div>
+                    <div>Expenses: <span className="text-[var(--danger)]">{formatInr(item.expense)}</span></div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="panel p-5">
         <h3 className="text-lg font-semibold">Recent Activity</h3>
         <p className="mt-1 text-sm muted">Income shown as +, expenses as -</p>
 
         {error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{error}</p> : null}
 
         <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border)]">
-          <div className="max-h-[480px] overflow-auto">
-            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+          {/* Desktop table */}
+          <div className="hidden sm:block max-h-[480px] overflow-auto">
+            <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-[var(--surface-muted)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold muted">Date</th>
@@ -120,35 +229,64 @@ export default function FinancesPage() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  [...Array.from({ length: 6 })].map((_, index) => (
-                    <tr key={`loading-${index}`} className="border-t border-[var(--border)]">
-                      <td colSpan={5} className="px-3 py-3">
-                        <div className="skeleton h-3 w-full" />
+                {isLoading
+                  ? [...Array.from({ length: 6 })].map((_, index) => (
+                      <tr key={`loading-${index}`} className="border-t border-[var(--border)]">
+                        <td colSpan={5} className="px-3 py-3">
+                          <div className="skeleton h-3 w-full" />
+                        </td>
+                      </tr>
+                    ))
+                  : merged.length === 0
+                  ? (
+                    <tr className="border-t border-[var(--border)]">
+                      <td colSpan={5} className="px-3 py-7 text-center muted">
+                        No financial activity found.
                       </td>
                     </tr>
-                  ))
-                ) : merged.length === 0 ? (
-                  <tr className="border-t border-[var(--border)]">
-                    <td colSpan={5} className="px-3 py-7 text-center muted">
-                      No financial activity found.
-                    </td>
-                  </tr>
-                ) : (
-                  merged.map((item) => (
-                    <tr key={item.id} className="border-t border-[var(--border)]">
-                      <td className="px-3 py-3">{formatDate(item.date)}</td>
-                      <td className="px-3 py-3">{item.kind === "income" ? "+" : "-"}</td>
-                      <td className="px-3 py-3">{item.place || item.category}</td>
-                      <td className="px-3 py-3 muted">{item.source || item.description}</td>
-                      <td className={`px-3 py-3 text-right font-semibold ${item.kind === "income" ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>
-                        {item.kind === "income" ? "+" : "-"}{formatInr(item.amountPaise)}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                  )
+                  : (
+                    merged.map((item) => (
+                      <tr key={item.id} className="border-t border-[var(--border)]">
+                        <td className="px-3 py-3">{formatDate(item.date)}</td>
+                        <td className="px-3 py-3">{item.kind === "income" ? "+" : "-"}</td>
+                        <td className="px-3 py-3">{item.place || item.category}</td>
+                        <td className="px-3 py-3 muted">{item.source || item.description}</td>
+                        <td className={`px-3 py-3 text-right font-semibold ${item.kind === "income" ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>
+                          {item.kind === "income" ? "+" : "-"}{formatInr(item.amountPaise)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile stacked list */}
+          <div className="sm:hidden p-2">
+            {isLoading ? (
+              [...Array.from({ length: 4 })].map((_, idx) => (
+                <div key={idx} className="mb-3 rounded-lg border px-3 py-3">
+                  <div className="skeleton h-4 w-28 mb-2" />
+                  <div className="skeleton h-3 w-full" />
+                </div>
+              ))
+            ) : merged.length === 0 ? (
+              <div className="text-center muted py-6">No financial activity found.</div>
+            ) : (
+              merged.map((item) => (
+                <div key={item.id} className="mb-3 rounded-lg border px-3 py-3">
+                  <div className="flex justify-between items-center">
+                    <div className="font-medium">{item.place || item.category}</div>
+                    <div className={`font-semibold ${item.kind === "income" ? "text-[var(--positive)]" : "text-[var(--danger)]"}`}>
+                      {item.kind === "income" ? "+" : "-"}{formatInr(item.amountPaise)}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-sm muted">{item.source || item.description}</div>
+                  <div className="mt-2 text-xs muted">{formatDate(item.date)}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

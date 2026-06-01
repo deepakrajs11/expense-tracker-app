@@ -59,7 +59,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const [session, setSession] = useState<SessionUser | null>(null);
   const [isChecking, setIsChecking] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const fetchSession = useCallback(async () => {
     setIsChecking(true);
@@ -81,6 +81,16 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchSession();
   }, [fetchSession]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    setSidebarOpen(mediaQuery.matches);
+
+    const handler = (event: MediaQueryListEvent) => setSidebarOpen(event.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
