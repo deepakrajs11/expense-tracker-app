@@ -1,0 +1,109 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.smssdk"
+4    android:versionCode="1"
+5    android:versionName="0.1" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+8-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml
+9        android:targetSdkVersion="34" />
+9-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml
+10
+11    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+11-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:4:5-70
+11-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:4:22-67
+12    <uses-permission android:name="android.permission.READ_SMS" />
+12-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:5:5-67
+12-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:5:22-64
+13    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+13-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:6:5-77
+13-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:6:22-74
+14
+15    <permission
+15-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:22:5-24:47
+16        android:name="com.example.smssdk.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+16-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:23:9-81
+17        android:protectionLevel="signature" />
+17-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:24:9-44
+18
+19    <uses-permission android:name="com.example.smssdk.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+19-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:26:5-97
+19-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:26:22-94
+20
+21    <application
+21-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:8:5-29:19
+22        android:name="com.example.smssdk.AppContext"
+22-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:9:9-35
+23        android:allowBackup="true"
+23-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:10:9-35
+24        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+24-->[androidx.core:core:1.10.1] /home/deepakrajs/.gradle/caches/transforms-3/3d61ef7d364a680126743eee86549e2c/transformed/core-1.10.1/AndroidManifest.xml:28:18-86
+25        android:debuggable="true"
+26        android:label="SMS SDK"
+26-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:11:9-32
+27        android:supportsRtl="true" >
+27-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:12:9-35
+28        <activity android:name="com.example.smssdk.MappingActivity" />
+28-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:14:9-53
+28-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:14:19-50
+29        <activity android:name="com.example.smssdk.ScannerActivity" />
+29-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:15:9-53
+29-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:15:19-50
+30        <activity
+30-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:16:9-21:20
+31            android:name="com.example.smssdk.MainActivity"
+31-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:16:19-47
+32            android:exported="true" >
+32-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:16:48-71
+33            <intent-filter>
+33-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:17:13-20:29
+34                <action android:name="android.intent.action.MAIN" />
+34-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:18:17-69
+34-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:18:25-66
+35
+36                <category android:name="android.intent.category.LAUNCHER" />
+36-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:19:17-77
+36-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:19:27-74
+37            </intent-filter>
+38        </activity>
+39
+40        <receiver
+40-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:23:9-27:20
+41            android:name="com.example.smssdk.SmsReceiver"
+41-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:23:19-46
+42            android:exported="true" >
+42-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:23:47-70
+43            <intent-filter android:priority="1000" >
+43-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:24:13-26:29
+43-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:24:28-51
+44                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+44-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:25:17-82
+44-->/home/deepakrajs/Personal Dev/expense-tracker-app/android-sdk/app/src/main/AndroidManifest.xml:25:25-79
+45            </intent-filter>
+46        </receiver>
+47
+48        <provider
+48-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+49            android:name="androidx.startup.InitializationProvider"
+49-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
+50            android:authorities="com.example.smssdk.androidx-startup"
+50-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
+51            android:exported="false" >
+51-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
+52            <meta-data
+52-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+53                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+53-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+54                android:value="androidx.startup" />
+54-->[androidx.emoji2:emoji2:1.2.0] /home/deepakrajs/.gradle/caches/transforms-3/cef059dc85a65743e11e93b39f68242e/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+55            <meta-data
+55-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/deepakrajs/.gradle/caches/transforms-3/13d486f189cae6dcb696ad4ca1177b03/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+56                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+56-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/deepakrajs/.gradle/caches/transforms-3/13d486f189cae6dcb696ad4ca1177b03/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+57                android:value="androidx.startup" />
+57-->[androidx.lifecycle:lifecycle-process:2.4.1] /home/deepakrajs/.gradle/caches/transforms-3/13d486f189cae6dcb696ad4ca1177b03/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+58        </provider>
+59    </application>
+60
+61</manifest>

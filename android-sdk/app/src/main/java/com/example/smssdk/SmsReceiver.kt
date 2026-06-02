@@ -26,7 +26,8 @@ class SmsReceiver : BroadcastReceiver() {
                             NotificationHelper.showMappingNotification(context, from, body)
                         } else {
                             // Use mapping to extract structured transaction
-                            val tx = SmsParser.applyMapping(body, MappingStore.getMappingFor(from))
+                            val mapping = MappingStore.getMappingFor(from)
+                            val tx = if (mapping != null) SmsParser.applyMapping(body, mapping) else SmsParser.parse(body)
                             // Broadcast parsed transaction so host apps may pick it up
                             val b = Intent("com.example.smssdk.TRANSACTION_PARSED")
                             b.putExtra("from", from)

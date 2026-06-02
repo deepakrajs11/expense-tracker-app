@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.smssdk.app-mergeDebugResources-19:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "/home/deepakrajs/.gradle/caches/transforms-3/f6092cf50afa6a952c5a3c2f1bf28b8e/transformed/appcompat-1.6.1/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -6,11 +6,15 @@ export async function GET() {
   // If APK exists, stream it
   const apkPath = path.resolve(process.cwd(), 'android-sdk', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
   if (fs.existsSync(apkPath)) {
+    const { Readable } = await import('stream')
+    const stat = fs.statSync(apkPath)
     const stream = fs.createReadStream(apkPath)
-    return new NextResponse(stream as unknown as ReadableStream, {
+    const webStream = Readable.toWeb(stream)
+    return new NextResponse(webStream, {
       headers: {
         'Content-Type': 'application/vnd.android.package-archive',
         'Content-Disposition': 'attachment; filename="app-debug.apk"',
+        'Content-Length': stat.size.toString(),
       },
     })
   }

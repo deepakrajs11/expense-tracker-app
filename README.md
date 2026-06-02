@@ -155,6 +155,37 @@ docker compose up -d
 
 ---
 
+## 📱 Android SMS SDK
+
+A companion Android app that listens for SMS notifications, parses debit/credit messages, and allows users to map senders to expense tracker accounts.
+
+**Features:**
+* SMS interception and parsing (debit/credit detection)
+* First-time sender mapping via notification UI
+* Account synchronization from the host app
+* QR/barcode scanner for account linking
+* Persistent local mapping storage
+* Transaction broadcasting to host app
+
+**SDK Location:** `android-sdk/`
+
+**Build & Install:**
+```bash
+cd android-sdk
+./gradlew assembleDebug
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Dashboard & Download:** Visit `/app/dashboard/sdk` to view the SDK page and download the APK or source code.
+
+**API Endpoints:**
+* `GET /api/sdk/accounts` — Fetch user accounts for mapping (secured with token)
+* `GET /api/sdk/download` — Download built APK or source ZIP
+
+**Testing:** See [TESTING.md](TESTING.md) for comprehensive setup and testing instructions.
+
+---
+
 ## 🌱 Demo Data
 
 To quickly test the app:
