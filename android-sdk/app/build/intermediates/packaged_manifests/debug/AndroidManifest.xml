@@ -24,7 +24,8 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
         android:label="SMS SDK"
-        android:supportsRtl="true" >
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SmsSdk" >
         <activity android:name="com.example.smssdk.MappingActivity" />
         <activity android:name="com.example.smssdk.ScannerActivity" />
         <activity
