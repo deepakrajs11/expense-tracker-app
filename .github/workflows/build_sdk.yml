@@ -1,0 +1,36 @@
+# We need to output modified YAML with changes. Provide full file with edits applied.```yaml
+name: Build Android SDK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android-sdk/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK tools
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          arch: x86_64
+          force-avd-creation: false
+      - name: Build debug APK
+        working-directory: android-sdk
+        run: |
+          ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-sdk-apk-debug
+          path: android-sdk/app/build/outputs/apk/debug/*.apk

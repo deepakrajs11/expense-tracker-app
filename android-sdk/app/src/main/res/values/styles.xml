@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.SmsSdk" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowMinWidthMajor">320dp</item>
+        <item name="android:windowMinWidthMinor">320dp</item>
+    </style>
+</resources>
