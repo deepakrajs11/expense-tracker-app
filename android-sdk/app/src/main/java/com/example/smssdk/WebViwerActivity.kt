@@ -1,4 +1,4 @@
-package com.example.smssdk   // same package as LoginActivity
+package com.example.smssdk
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -16,12 +16,11 @@ class WebViewerActivity : AppCompatActivity() {
         val webView = WebView(this)
         setContentView(webView)
 
-        // Grab the cookie passed from LoginActivity
+        // Pull the cookie passed from LoginActivity
         val cookie = intent.getStringExtra("cookie")
         if (cookie != null) {
             val cm = CookieManager.getInstance()
-            // 👉‑Replace with your real domain (must match the cookie domain)
-            cm.setCookie("expense-tracker-app-two-zeta.vercel.app", cookie)
+            cm.setCookie("expense-tracker-app-two-zeta.vercel.app", cookie)   // <<‑‑ same domain as in LoginActivity
             cm.flush()
         }
 
@@ -32,7 +31,7 @@ class WebViewerActivity : AppCompatActivity() {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = WebViewClient()
 
-        // 👉‑Replace with the mobile entry point of your site
+        // Load the mobile dashboard
         webView.loadUrl("https://expense-tracker-app-two-zeta.vercel.app/app/dashboard")
     }
 }

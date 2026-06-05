@@ -1,4 +1,4 @@
-package com.example.smssdk   // keep the original package
+package com.example.smssdk
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,19 +7,18 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType   // ✅ Kotlin extension
+import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONObject
 import java.io.IOException
 
 class LoginActivity : AppCompatActivity() {
 
     private val client = OkHttpClient()
-    // 👉‑Replace with your real host (dev, staging or prod)
-    private val baseUrl = "https://expense-tracker-app-two-zeta.vercel.app/api/auth"
+    private val baseUrl = "https://expense-tracker-app-two-zeta.vercel.app/api/auth"   // <<‑‑ UPDATE HERE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        setContentView(R.layout.activity_login)   // layout file name must match
 
         val emailEt = findViewById<EditText>(R.id.etEmail)
         val pwdEt   = findViewById<EditText>(R.id.etPassword)
@@ -42,7 +41,6 @@ class LoginActivity : AppCompatActivity() {
             put("password", password)
         }
 
-        // ✅ Use the Kotlin extension to create the MediaType
         val requestBody = RequestBody.create(
             "application/json; charset=utf-8".toMediaType(),
             json.toString()
@@ -68,7 +66,7 @@ class LoginActivity : AppCompatActivity() {
                     return
                 }
 
-                // Pass the session cookie to the WebView activity
+                // Pass session cookie to the WebView activity
                 val cookie = response.header("Set-Cookie")
                 val intent = Intent(this@LoginActivity, WebViewerActivity::class.java)
                 intent.putExtra("cookie", cookie)
