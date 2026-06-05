@@ -1,6 +1,6 @@
-# We need to output modified YAML with changes. Provide full file with edits applied.```yaml
 name: Build Android SDK
 
+# Trigger on any change inside the android‑sdk folder or manually
 on:
   workflow_dispatch:
   push:
@@ -10,25 +10,71 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
+    # -----------------------------------------------------------------
+    # 1️⃣ Checkout the repository
+    # -----------------------------------------------------------------
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------
+      # 2️⃣ Set up Java (required by AGP)
+      # -----------------------------------------------------------------
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK tools
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          arch: x86_64
-          force-avd-creation: false
+      # -----------------------------------------------------------------
+      # 3️⃣ Install Android command‑line tools
+      # -----------------------------------------------------------------
+      - name: Install Android command‑line tools
+        # We use ${{ runner.temp }} directly inside the shell script
+        run: |
+          # Define where we’ll put the SDK (a temp dir that is writable)
+          export ANDROID_SDK_ROOT="${{ runner.temp }}/android-sdk"
+          mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+
+          # Download the latest command‑line tools zip
+          CMDLINE_TOOLS_VERSION=11076708   # matches “latest” at the time of writing
+          curl -L -o cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip"
+
+          # Unzip into the SDK location
+          unzip -q cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
+          mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+          rm cmdline-tools.zip
+
+          # Accept all licences (silent)
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+
+          # Install the minimal platform / build‑tools we need for a build
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools"
+
+      # -----------------------------------------------------------------
+      # 4️⃣ Tell Gradle where the SDK lives (creates local.properties)
+      # -----------------------------------------------------------------
+      - name: Create local.properties for Android SDK
+        run: |
+          export ANDROID_SDK_ROOT="${{ runner.temp }}/android-sdk"
+          echo "sdk.dir=${ANDROID_SDK_ROOT}" > android-sdk/local.properties
+
+      # -----------------------------------------------------------------
+      # 5️⃣ Build the debug APK
+      # -----------------------------------------------------------------
       - name: Build debug APK
         working-directory: android-sdk
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew clean assembleDebug --no-daemon --stacktrace
+
+      # -----------------------------------------------------------------
+      # 6️⃣ Upload the generated APK as an artifact
+      # -----------------------------------------------------------------
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
