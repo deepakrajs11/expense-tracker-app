@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.smssdk">
 
+    <!-- Existing permissions -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -12,20 +13,31 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmsSdk">
 
+        <!-- ==== YOUR ORIGINAL COMPONENTS ==== -->
         <activity android:name=".MappingActivity" />
         <activity android:name=".ScannerActivity" />
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity android:name=".MainActivity"
+                  android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <receiver android:name=".SmsReceiver" android:exported="true">
+        <receiver android:name=".SmsReceiver"
+                  android:exported="true">
             <intent-filter android:priority="1000">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 
+        <!-- ==== NEW SDK‑LOGIN COMPONENTS ==== -->
+        <!-- This is the login screen that the user sees first -->
+        <activity android:name=".LoginActivity"
+                  android:exported="true" />       
+
+        <!-- This activity hosts the WebView that loads your web dashboard -->
+        <activity android:name=".WebViewerActivity"
+                  android:exported="false" />            
     </application>
 </manifest>

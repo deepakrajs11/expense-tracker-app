@@ -10,6 +10,18 @@
 !.yarn/releases
 !.yarn/versions
 
+
+.gradle/
+build/
+app/build/
+*.apk
+local.properties
+
+android-sdk/.gradle/
+android-sdk/app/build/
+*.apk
+*.zip
+
 # testing
 /coverage
 
