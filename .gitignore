@@ -19,8 +19,8 @@ local.properties
 
 android-sdk/.gradle/
 android-sdk/app/build/
-*.apk
-*.zip
+# Allow the committed release APK in public/downloads
+!public/downloads/*.apk
 
 # testing
 /coverage
@@ -51,3 +51,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+# Android build output
+/android-sdk/app/build/
+/android-sdk/build/
+/android-sdk/.gradle/
+/android-sdk/local.properties   # if you ever generate it locally
+
+# Gradle wrapper caches (optional)
+.gradle/
+
+# IDE files
+.idea/
+*.iml
+
+# Misc
+*.log
