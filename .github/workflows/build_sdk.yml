@@ -1,3 +1,4 @@
+# We need to output modified YAML with changes. Provide full file with edits applied.```yaml
 name: Build Android SDK
 
 on:
@@ -24,14 +25,12 @@ jobs:
           api-level: 33
           arch: x86_64
           force-avd-creation: false
-
-      - name: Build release APK
+      - name: Build debug APK
         working-directory: android-sdk
         run: |
-          ./gradlew assembleRelease --no-daemon --stacktrace
-
+          ./gradlew assembleDebug --no-daemon --stacktrace
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-sdk-apk
-          path: android-sdk/app/build/outputs/apk/release/*.apk
+          name: android-sdk-apk-debug
+          path: android-sdk/app/build/outputs/apk/debug/*.apk
