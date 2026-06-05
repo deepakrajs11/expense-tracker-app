@@ -151,6 +151,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
                     <NavItem href="/dashboard/finances" label="Finances" active={pathname === "/dashboard/finances"} />
                     <NavItem href="/dashboard/trends" label="Trends" active={pathname === "/dashboard/trends"} />
+                    <NavItem href="/dashboard/sdk" label="SDK" active={pathname === "/dashboard/sdk"} />
                   </nav>
                 </aside>
               ) : null}
@@ -165,3 +166,4 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     </DashboardShellContext.Provider>
   );
 }
+
