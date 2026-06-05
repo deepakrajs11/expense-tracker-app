@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android-sdk/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          git init
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --force FETCH_HEAD
+
+      - name: Install JDK 17
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk
+
+      - name: Make gradlew executable
+        run: chmod +x android-sdk/gradlew
+
+      - name: Build debug APK
+        working-directory: android-sdk
+        env:
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL }}
+          DEFAULT_WEB_BASE_URL: https://expense-tracker-app-two-zeta.vercel.app
+        run: |
+          WEB_BASE_URL="${WEB_BASE_URL:-$DEFAULT_WEB_BASE_URL}"
+          ./gradlew assembleDebug -PWEB_BASE_URL="$WEB_BASE_URL"
+
+      - name: Copy APK to public/downloads
+        run: |
+          mkdir -p public/downloads
+          cp android-sdk/app/build/outputs/apk/debug/app-debug.apk public/downloads/app-debug.apk
+
+      - name: Commit updated APK
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/app-debug.apk
+          if git diff --cached --quiet; then
+            echo "No APK changes to commit."
+            exit 0
+          fi
+          git commit -m "ci: update Android APK build [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}

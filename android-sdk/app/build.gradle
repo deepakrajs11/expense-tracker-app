@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    namespace "com.example.smssdk"
+    namespace "com.example.expensetracker"
     compileSdkVersion 34
 
     compileOptions {
@@ -14,12 +14,23 @@ android {
         jvmTarget = "17"
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
-        applicationId "com.example.smssdk"
+        applicationId "com.example.expensetracker"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1
-        versionName "0.1"
+        versionCode 2
+        versionName "1.0"
+
+        // BASE_URL is read from gradle property or environment variable at build time.
+        // Pass with: ./gradlew assembleDebug -PWEB_BASE_URL=https://your-deployment.com
+        def webBaseUrl = project.findProperty('WEB_BASE_URL')
+            ?: System.getenv('WEB_BASE_URL')
+            ?: "https://expense-tracker-app-two-zeta.vercel.app"
+        buildConfigField "String", "BASE_URL", "\"${webBaseUrl}\""
     }
 
     buildTypes {
@@ -36,6 +47,9 @@ dependencies {
     implementation "androidx.core:core-ktx:1.10.1"
     implementation "com.google.android.material:material:1.9.0"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "androidx.recyclerview:recyclerview:1.3.1"
+    implementation "androidx.cardview:cardview:1.0.0"
+    implementation "androidx.fragment:fragment-ktx:1.6.1"
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
     implementation "com.squareup.okhttp3:okhttp:4.11.0"
-
 }

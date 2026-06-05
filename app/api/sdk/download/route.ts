@@ -4,18 +4,16 @@ import path from 'path';
 
 export async function GET() {
   // -------------------------------------------------
-  // 1️⃣ Stream the APK if it already exists
+  // 1️⃣ Resolve APK path:
+  //    - public/downloads/app-debug.apk   (committed via CI, always latest)
+  //    - android-sdk build output          (local dev fallback)
   // -------------------------------------------------
-  const apkPath = path.resolve(
+  const committedApk = path.resolve(process.cwd(), 'public', 'downloads', 'app-debug.apk');
+  const buildApk = path.resolve(
     process.cwd(),
-    'android-sdk',
-    'app',
-    'build',
-    'outputs',
-    'apk',
-    'debug',
-    'app-debug.apk'
+    'android-sdk', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk'
   );
+  const apkPath = fs.existsSync(committedApk) ? committedApk : buildApk;
 
   if (fs.existsSync(apkPath)) {
     const { Readable } = await import('stream');

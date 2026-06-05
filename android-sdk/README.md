@@ -1,36 +1,32 @@
-Android SMS SDK (sample app)
+# Expense Tracker – Android App
 
-This directory contains a minimal Android app project that acts as an installable SDK app. It listens for incoming SMS messages, attempts to parse debit/credit notifications, and provides a simple mapping UI for first-time message curation.
+Native Android companion to the Expense Tracker web application. Calls the same REST APIs and keeps data in sync with the web account.
 
-How to build
+## Features
 
-1. Install Android SDK & Java JDK 11+
-2. From this folder run `./gradlew assembleDebug` to build an APK at `app/build/outputs/apk/debug/app-debug.apk`.
+- Login / Register (same credentials as the web app)
+- Dashboard with net balance, total income, total expenses
+- Expenses list + add expense (amount, category, description, source, date)
+- Incomes list + add income (amount, place, source, date)
+- Profile screen with logout
 
-Permissions & setup
+## Build
 
-- The app requests `RECEIVE_SMS` and `READ_SMS` permissions. On Android 6+ you must request them at runtime.
-- To enable automatic receipt of messages, the user must grant SMS permissions and set this app as the default SMS app on newer Android versions when required by the platform.
+Requirements: Java 17, Android SDK (API 21+).
 
-Runtime behavior
+```bash
+# Build with default URL (from gradle.properties)
+./gradlew assembleDebug
 
-- The SDK registers a `BroadcastReceiver` to receive SMS messages.
-- On first time encountering a bank message pattern, it opens a small mapping UI to let the user confirm which part of the message corresponds to debit/credit amounts, account, and narration.
-- Mappings are stored locally in `SharedPreferences` for subsequent automatic parsing.
+# Build pointing to a specific deployment
+./gradlew assembleDebug -PWEB_BASE_URL=https://your-deployment.com
+```
 
-Additional features:
+APK output: `app/build/outputs/apk/debug/app-debug.apk`
 
-- Notification prompts: when an SMS is parsed, the SDK shows a notification that allows the user to "Map now" or "Add category". Mapping opens the SDK mapping UI.
-- Mapping UI: lets the user sync accounts from a host API, add accounts manually, choose an account to map a sender to, or scan/enter a temporary code to link to an account.
-- Scanner: the SDK attempts to launch an external scanner app (ZXing) if available; otherwise a manual code entry is provided.
+The CI pipeline (`/.github/workflows/build-apk.yml`) builds the APK automatically on every push to `main` and commits it to `public/downloads/app-debug.apk` so the web app can serve it immediately.
 
-Developer note: The SDK broadcasts an intent `com.example.smssdk.TRANSACTION_PARSED` with parsed details (`from`, `body`, `amount`, `type`) — your host app on Android can listen for this to receive parsed transactions.
+## Configuring the API URL
 
-Integrating with your app
-
-- This sample is provided as an installable APK. You can adapt it into a library (`aar`) if you want tighter integration.
-- Alternatively, the app can expose parsed transactions via a deep link or by broadcasting an intent that the host app listens for.
-
-Notes
-
-This is an initial scaffold. You will need to adjust the parsing rules and mapping UI for your specific banks and message formats.
+The base URL is injected at build time via `BuildConfig.BASE_URL`.  
+Priority: gradle project property `-PWEB_BASE_URL` → `WEB_BASE_URL` environment variable → default in `gradle.properties`.

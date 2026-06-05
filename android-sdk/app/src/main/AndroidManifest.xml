@@ -1,44 +1,36 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.smssdk">
+    package="com.example.expensetracker">
 
-    <!-- Existing permissions -->
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name=".AppContext"
+        android:name=".App"
         android:allowBackup="true"
-        android:label="SMS SDK"
+        android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SmsSdk">
+        android:theme="@style/Theme.ExpenseTracker">
 
-        <!-- ==== YOUR ORIGINAL COMPONENTS ==== -->
-        <activity android:name=".MappingActivity" />
-        <activity android:name=".ScannerActivity" />
-        <activity android:name=".MainActivity"
-                  android:exported="true">
-        </activity>
-
-        <receiver android:name=".SmsReceiver"
-                  android:exported="true">
-            <intent-filter android:priority="1000">
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- ==== NEW SDK‑LOGIN COMPONENTS ==== -->
-        <!-- This is the login screen that the user sees first -->
-        <activity android:name=".LoginActivity"
-                  android:exported="true">
-                  <intent-filter>
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            </activity>       
+        </activity>
 
-        <!-- This activity hosts the WebView that loads your web dashboard -->
-        <activity android:name=".WebViewerActivity"
-                  android:exported="false" />            
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DashboardActivity"
+            android:exported="false" />
+
+        <!-- end activities -->
     </application>
 </manifest>
