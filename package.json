@@ -20,11 +20,12 @@
     "react-dom": "19.2.4"
   },
   "optionalDependencies": {
-    "archiver": "^5.3.1",
+    "archiver": "^5.3.2",
     "stream-buffers": "^3.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/archiver": "^7.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.0",

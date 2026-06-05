@@ -1,49 +1,77 @@
-import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET() {
-  // If APK exists, stream it
-  const apkPath = path.resolve(process.cwd(), 'android-sdk', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk')
+  // -------------------------------------------------
+  // 1️⃣ Stream the APK if it already exists
+  // -------------------------------------------------
+  const apkPath = path.resolve(
+    process.cwd(),
+    'android-sdk',
+    'app',
+    'build',
+    'outputs',
+    'apk',
+    'debug',
+    'app-debug.apk'
+  );
+
   if (fs.existsSync(apkPath)) {
-    const { Readable } = await import('stream')
-    const stat = fs.statSync(apkPath)
-    const stream = fs.createReadStream(apkPath)
-    const webStream = Readable.toWeb(stream)
-    return new NextResponse(webStream, {
+    const { Readable } = await import('stream');
+    const stat = fs.statSync(apkPath);
+    const stream = fs.createReadStream(apkPath);
+    const webStream = Readable.toWeb(stream);
+
+    // WHATWG stream expected by NextResponse
+    const readableApk = webStream as unknown as ReadableStream<Uint8Array>;
+
+    return new NextResponse(readableApk, {
       headers: {
         'Content-Type': 'application/vnd.android.package-archive',
         'Content-Disposition': 'attachment; filename="app-debug.apk"',
         'Content-Length': stat.size.toString(),
       },
-    })
+    });
   }
 
-  // Otherwise stream a ZIP of the sdk folder to avoid buffering large files
-  const sdkDir = path.resolve(process.cwd(), 'android-sdk')
+  // -------------------------------------------------
+  // 2️⃣ Otherwise, stream a ZIP of the whole Android SDK
+  // -------------------------------------------------
+  const sdkDir = path.resolve(process.cwd(), 'android-sdk');
   if (!fs.existsSync(sdkDir)) {
-    return NextResponse.json({ error: 'android-sdk directory not found' }, { status: 404 })
+    return NextResponse.json(
+      { error: 'android-sdk directory not found' },
+      { status: 404 }
+    );
   }
 
   try {
-    const archiver = (await import('archiver')).default
-    const { PassThrough } = await import('stream')
-    const pass = new PassThrough()
-    const archive = archiver('zip', { zlib: { level: 9 } })
-    archive.directory(sdkDir, 'android-sdk')
-    archive.pipe(pass)
-    archive.finalize().catch(() => {})
+    const archiver = (await import('archiver')).default;
+    const { PassThrough, Readable } = await import('stream');
 
-    // Convert Node stream to WHATWG ReadableStream for NextResponse
-    const { Readable } = await import('stream')
-    const webStream = Readable.toWeb(pass)
-    return new NextResponse(webStream as unknown as ReadableStream, {
+    const pass = new PassThrough();
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    archive.directory(sdkDir, 'android-sdk');
+    archive.pipe(pass);
+    archive.finalize().catch(() => {});
+
+    // Convert Node stream → WHATWG ReadableStream
+    const webStream = Readable.toWeb(pass);
+    const readableZip = webStream as unknown as ReadableStream<Uint8Array>;
+
+    return new NextResponse(readableZip, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': 'attachment; filename="android-sdk.zip"',
+        'Content-Disposition':
+          'attachment; filename="android-sdk.zip"',
       },
-    })
+    });
   } catch (e) {
-    return NextResponse.json({ error: 'archiving not available', detail: String(e) }, { status: 500 })
+    return NextResponse.json(
+      { error: 'archiving not available', detail: String(e) },
+      { status: 500 }
+    );
   }
 }
