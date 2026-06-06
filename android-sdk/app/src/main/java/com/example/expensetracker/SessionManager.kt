@@ -36,6 +36,9 @@ object SessionManager {
     fun getCookie(ctx: Context): String? =
         prefs(ctx).getString(KEY_COOKIE, null)
 
+    fun getUserId(ctx: Context): String =
+        prefs(ctx).getString(KEY_USER_ID, "") ?: ""
+
     fun getUserName(ctx: Context): String =
         prefs(ctx).getString(KEY_USER_NAME, "") ?: ""
 
