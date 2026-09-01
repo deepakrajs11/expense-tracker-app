@@ -9,14 +9,14 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Sender regex"
+        android:hint="Sender ID (e.g. SCBANK)"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etRegex"
+            android:id="@+id/etSenderSlug"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
+            android:inputType="textCapCharacters"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 

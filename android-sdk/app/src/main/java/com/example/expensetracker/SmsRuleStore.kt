@@ -25,19 +25,19 @@ object SmsRuleStore {
                 add(
                     SmsMappingRule(
                         id = item.optString("id", UUID.randomUUID().toString()),
-                        senderRegex = item.optString("senderRegex", "").trim(),
+                        senderSlug = item.optString("senderSlug", "").trim(),
                         place = item.optString("place", "").trim()
                     )
                 )
             }
-        }.filter { it.senderRegex.isNotBlank() && it.place.isNotBlank() }
+        }.filter { it.senderSlug.isNotBlank() && it.place.isNotBlank() }
     }
 
-    fun saveRule(ctx: Context, senderRegex: String, place: String): SmsMappingRule {
+    fun saveRule(ctx: Context, senderSlug: String, place: String): SmsMappingRule {
         val current = loadRules(ctx).toMutableList()
         val rule = SmsMappingRule(
             id = UUID.randomUUID().toString(),
-            senderRegex = senderRegex.trim(),
+            senderSlug = SmsTransactionParser.extractSenderSlug(senderSlug),
             place = place.trim()
         )
         current.add(rule)
@@ -55,7 +55,7 @@ object SmsRuleStore {
             array.put(
                 JSONObject().apply {
                     put("id", rule.id)
-                    put("senderRegex", rule.senderRegex)
+                    put("senderSlug", rule.senderSlug)
                     put("place", rule.place)
                 }
             )

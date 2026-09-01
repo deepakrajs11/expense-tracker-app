@@ -7,7 +7,7 @@ enum class SmsTransactionKind {
 
 data class SmsMappingRule(
     val id: String,
-    val senderRegex: String,
+    val senderSlug: String,
     val place: String
 )
 

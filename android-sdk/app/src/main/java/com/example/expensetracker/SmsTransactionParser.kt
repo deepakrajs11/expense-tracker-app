@@ -2,6 +2,7 @@ package com.example.expensetracker
 
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.Locale
 import java.util.UUID
 
 object SmsTransactionParser {
@@ -13,6 +14,24 @@ object SmsTransactionParser {
         Regex("\\b([0-9,]+(?:\\.[0-9]{1,2})?)\\b")
     )
 
+    // DLT sender IDs vary by carrier prefix/suffix, e.g. "VM-SCBANK-S", "AD-SCBANK", "SCBANK-T".
+    // Only the core code (e.g. "SCBANK") is stable, so that's what rules match against.
+    fun extractSenderSlug(raw: String): String {
+        val trimmed = raw.trim().uppercase(Locale.ROOT)
+        if (trimmed.isEmpty()) return trimmed
+
+        val parts = trimmed.split("-").filter { it.isNotBlank() }
+        if (parts.size == 1) return parts[0]
+
+        var start = 0
+        var end = parts.size
+        if (parts.first().length <= 2) start += 1
+        if (end - start > 1 && parts.last().length <= 2) end -= 1
+        if (start >= end) return trimmed
+
+        return parts.subList(start, end).joinToString("-")
+    }
+
     fun detect(
         sender: String?,
         body: String,
@@ -22,13 +41,9 @@ object SmsTransactionParser {
         val resolvedSender = sender?.trim().orEmpty()
         if (resolvedSender.isBlank()) return null
 
-        val senderPattern = try {
-            Regex(rule.senderRegex, RegexOption.IGNORE_CASE)
-        } catch (_: Exception) {
-            return null
-        }
-
-        if (!senderPattern.containsMatchIn(resolvedSender)) return null
+        val ruleSlug = rule.senderSlug.trim().uppercase(Locale.ROOT)
+        if (ruleSlug.isBlank()) return null
+        if (extractSenderSlug(resolvedSender) != ruleSlug) return null
 
         val kind = when {
             creditRegex.containsMatchIn(body) -> SmsTransactionKind.CREDIT

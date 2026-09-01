@@ -90,7 +90,7 @@ class SmsAutomationActivity : AppCompatActivity() {
 
     private fun updatePermissionState() {
         tvStatus.text = if (hasRequiredPermissions()) {
-            "SMS permission is enabled. Add sender regex rules below."
+            "SMS permission is enabled. Add sender ID mappings below."
         } else {
             "Enable SMS and notification permissions to auto-detect UPI messages."
         }
@@ -128,7 +128,7 @@ class SmsAutomationActivity : AppCompatActivity() {
         }
 
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_sms_rule, null)
-        val etRegex = view.findViewById<EditText>(R.id.etRegex)
+        val etSenderSlug = view.findViewById<EditText>(R.id.etSenderSlug)
         val spinnerPlace = view.findViewById<Spinner>(R.id.spinnerPlace)
         spinnerPlace.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, places)
 
@@ -142,15 +142,15 @@ class SmsAutomationActivity : AppCompatActivity() {
         dialog.setOnShowListener {
             val btnSave = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             btnSave.setOnClickListener {
-                val regex = etRegex.text.toString().trim()
+                val senderSlug = etSenderSlug.text.toString().trim()
                 val place = spinnerPlace.selectedItem?.toString().orEmpty()
 
-                if (regex.isBlank()) {
-                    etRegex.error = "Required"
+                if (senderSlug.isBlank()) {
+                    etSenderSlug.error = "Required"
                     return@setOnClickListener
                 }
 
-                SmsRuleStore.saveRule(this, regex, place)
+                SmsRuleStore.saveRule(this, senderSlug, place)
                 placeAdapter.update(SmsRuleStore.loadRules(this))
                 dialog.dismiss()
             }

@@ -25,7 +25,7 @@ class SmsRuleAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
-        holder.tvPattern.text = item.senderRegex
+        holder.tvPattern.text = item.senderSlug
         holder.tvPlace.text = item.place
         holder.btnDelete.setOnClickListener { onDelete(item) }
     }
